@@ -52,4 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SPLIT_HAND_MATRIX_GRID_LOW_IS_LEFT
 
 #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
-#define AUTO_MOUSE_DEFAULT_LAYER 1
+#define AUTO_MOUSE_DEFAULT_LAYER 4
+
+#define COMBO_TERM 35
+#define COMBO_MUST_TAP_PER_COMBO

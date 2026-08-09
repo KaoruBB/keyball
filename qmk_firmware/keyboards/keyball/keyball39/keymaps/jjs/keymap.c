@@ -19,6 +19,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include QMK_KEYBOARD_H
 
 #include "quantum.h"
+
+const uint16_t PROGMEM fd_escape_combo[] = {LGUI_T(KC_F), LALT_T(KC_D), COMBO_END};
+const uint16_t PROGMEM qw_tab_combo[]    = {KC_Q, KC_W, COMBO_END};
+const uint16_t PROGMEM jk_escape_combo[] = {RGUI_T(KC_J), RALT_T(KC_K), COMBO_END};
+const uint16_t PROGMEM lscln_tab_combo[] = {RSFT_T(KC_L), RCTL_T(KC_SCLN), COMBO_END};
+
+combo_t key_combos[] = {
+    COMBO(fd_escape_combo, KC_ESC),
+    COMBO(qw_tab_combo, KC_TAB),
+    COMBO(jk_escape_combo, KC_ESC),
+    COMBO(lscln_tab_combo, KC_TAB),
+};
+
+bool get_combo_must_tap(uint16_t combo_index, combo_t *combo) {
+    return true;
+}
+
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // keymap for default
@@ -37,7 +54,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
  [2] = LAYOUT_universal(
-    KC_TAB        , KC_7                , KC_8               , KC_9                    ,      KC_0   ,  KC_NUHS  , KC_BTN1  , KC_BTN3       , KC_BTN2         , KC_BSPC  ,
+    KC_TAB        , KC_7                , KC_8               , KC_9                    ,      KC_0   ,  KC_NUHS  , KC_GRV   , KC_QUOT       , KC_LBRC         , KC_RBRC  ,
     LCTL_T(KC_ESC), LSFT_T( KC_4 )      , LALT_T(KC_5)       , LGUI_T(KC_6), S(KC_SCLN),      KC_LEFT,  RGUI_T( KC_DOWN )   , RALT_T(KC_UP) , RSFT_T(KC_RIGHT), RCTL_T(KC_QUOT)  ,
     KC_SLSH       , KC_1                , KC_2               , KC_3     ,KC_MINS       ,      KC_EQL ,  KC_LEFT             , KC_DOWN       , KC_RIGHT        , _______  ,
     KC_ESC        , KC_0     , KC_DOT   , KC_DEL   , KC_ENT  , KC_BSPC  , _______      ,      TO(0)  ,   _______            , _______       , _______         , _______
@@ -51,12 +68,20 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     RGB_RMOD , RGB_HUD  , RGB_SAD  , RGB_VAD  , SCRL_DVD ,                            CPI_D1K  , CPI_D100 , CPI_I100 , CPI_I1K  , KBC_SAVE ,
     QK_BOOT  , KBC_RST  , _______  , _______  , _______  , _______  ,      _______  , _______  , _______  , _______  , KBC_RST  , QK_BOOT
   ),
+
+  // Transparent typing layer automatically enabled by trackball movement.
+  [4] = LAYOUT_universal(
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , KC_BTN1  , KC_BTN3  , KC_BTN2  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
+    _______  , _______  , _______  , _______  , _______  , _______  ,      _______  , _______  , _______  , _______  , _______  , _______
+  ),
 };
 // clang-format on
 
 layer_state_t layer_state_set_user(layer_state_t state) {
-    // Auto enable scroll mode when the highest layer is 3
-    keyball_set_scroll_mode(get_highest_layer(state) == 3);
+    // Auto enable scroll mode whenever layer 3 is active.
+    keyball_set_scroll_mode(layer_state_cmp(state, 3));
     return state;
 }
 
