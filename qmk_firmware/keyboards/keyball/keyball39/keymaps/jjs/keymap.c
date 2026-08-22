@@ -21,9 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "quantum.h"
 
 const uint16_t PROGMEM fd_escape_combo[] = {LGUI_T(KC_F), LALT_T(KC_D), COMBO_END};
-const uint16_t PROGMEM qw_tab_combo[]    = {KC_Q, KC_W, COMBO_END};
-const uint16_t PROGMEM jk_escape_combo[] = {RGUI_T(KC_J), RALT_T(KC_K), COMBO_END};
-const uint16_t PROGMEM lscln_tab_combo[] = {RSFT_T(KC_L), RCTL_T(KC_SCLN), COMBO_END};
+const uint16_t PROGMEM qw_tab_combo[] = {KC_Q, KC_W, COMBO_END};
+const uint16_t PROGMEM jk_escape_combo[] = {RGUI_T(KC_J), RALT_T(KC_K),
+                                            COMBO_END};
+const uint16_t PROGMEM lscln_tab_combo[] = {RSFT_T(KC_L), RCTL_T(KC_SCLN),
+                                            COMBO_END};
 
 combo_t key_combos[] = {
     COMBO(fd_escape_combo, KC_ESC),
@@ -32,9 +34,7 @@ combo_t key_combos[] = {
     COMBO(lscln_tab_combo, KC_TAB),
 };
 
-bool get_combo_must_tap(uint16_t combo_index, combo_t *combo) {
-    return true;
-}
+bool get_combo_must_tap(uint16_t combo_index, combo_t *combo) { return true; }
 
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -71,8 +71,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   // Transparent typing layer automatically enabled by trackball movement.
   [4] = LAYOUT_universal(
-    _______  , _______  , _______  , _______  , _______  ,                            _______  , KC_BTN1  , KC_BTN3  , KC_BTN2  , _______  ,
-    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , KC_BTN1  , SCRL_MO  , KC_BTN2  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , SCRL_MO  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  , _______  ,      _______  , _______  , _______  , _______  , _______  , _______
   ),
