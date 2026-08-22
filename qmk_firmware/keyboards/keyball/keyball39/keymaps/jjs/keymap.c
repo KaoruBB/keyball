@@ -20,7 +20,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "quantum.h"
 
-const uint16_t PROGMEM fd_escape_combo[] = {LGUI_T(KC_F), LALT_T(KC_D), COMBO_END};
+enum custom_keycodes {
+    BTN3_SCRL = KEYBALL_SAFE_RANGE,
+};
+
+static bool     btn3_scroll_held;
+static bool     btn3_scroll_used;
+static uint16_t btn3_scroll_timer;
+
+const uint16_t PROGMEM fd_escape_combo[] = {LGUI_T(KC_F), LALT_T(KC_D),
+                                            COMBO_END};
 const uint16_t PROGMEM qw_tab_combo[] = {KC_Q, KC_W, COMBO_END};
 const uint16_t PROGMEM jk_escape_combo[] = {RGUI_T(KC_J), RALT_T(KC_K),
                                             COMBO_END};
@@ -47,9 +56,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
   [1] = LAYOUT_universal(
-    KC_GRV   , KC_F       , KC_F3    , KC_F4      , KC_RBRC,                                 KC_LBRC   , KC_BTN1    , KC_F8    , KC_BTN2    , KC_RBRC  ,
-    KC_ESC    , KC_EXLM    , S(KC_6)  , S(KC_INT3) , S(KC_8),                                 S(KC_INT1), KC_F7  , KC_PGUP  , KC_F9  , KC_SCLN  ,
-    S(KC_EQL), S(KC_LBRC) , S(KC_7)  , S(KC_2)    , S(KC_RBRC),                              KC_LBRC   , KC_DLR   , KC_PGDN  , KC_BTN3  , KC_F11   , 
+    KC_F1    , KC_F2      , KC_F3    , KC_F4      , KC_F5,                                   KC_F6      , KC_F7    , KC_F8    , KC_F9    , KC_F10   ,
+    KC_ESC   , KC_EXLM    , S(KC_6)  , S(KC_INT3) , S(KC_8),                                 S(KC_INT1), KC_HOME  , KC_PGUP  , _______  , KC_SCLN  ,
+    S(KC_EQL), S(KC_LBRC) , S(KC_7)  , S(KC_2)    , S(KC_RBRC),                              KC_LBRC   , KC_END   , KC_PGDN  , KC_F11   , KC_F12   ,
     KC_INT1  , KC_EQL     , S(KC_3)  , KC_LNG2    , _______,                                 _______   , _______  , _______  , KC_LNG2  , KC_RALT  , KC_RGUI, _______
   ),
 
@@ -71,17 +80,51 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   // Transparent typing layer automatically enabled by trackball movement.
   [4] = LAYOUT_universal(
-    _______  , _______  , _______  , _______  , _______  ,                            _______  , KC_BTN1  , SCRL_MO  , KC_BTN2  , _______  ,
-    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , SCRL_MO  , _______  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , KC_BTN1  , BTN3_SCRL, KC_BTN2  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , KC_BTN3  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  , _______  ,      _______  , _______  , _______  , _______  , _______  , _______
   ),
 };
 // clang-format on
 
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (keycode != BTN3_SCRL) {
+        return true;
+    }
+
+    if (record->event.pressed) {
+        btn3_scroll_held  = true;
+        btn3_scroll_used  = false;
+        btn3_scroll_timer = timer_read();
+        keyball_set_scroll_mode(true);
+    } else {
+        bool tapped = !btn3_scroll_used && timer_elapsed(btn3_scroll_timer) < TAPPING_TERM;
+
+        btn3_scroll_held = false;
+        keyball_set_scroll_mode(layer_state_is(3));
+        if (tapped) {
+            tap_code(KC_BTN3);
+        }
+    }
+
+    return false;
+}
+
+bool is_mouse_record_user(uint16_t keycode, keyrecord_t *record) {
+    return keycode == BTN3_SCRL;
+}
+
+report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
+    if (btn3_scroll_held && (mouse_report.v != 0 || mouse_report.h != 0)) {
+        btn3_scroll_used = true;
+    }
+    return mouse_report;
+}
+
 layer_state_t layer_state_set_user(layer_state_t state) {
     // Auto enable scroll mode whenever layer 3 is active.
-    keyball_set_scroll_mode(layer_state_cmp(state, 3));
+    keyball_set_scroll_mode(btn3_scroll_held || layer_state_cmp(state, 3));
     return state;
 }
 
