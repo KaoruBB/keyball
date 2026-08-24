@@ -1,1 +1,4 @@
 tmp/
+macos/keyball-scroll/.build/
+macos/keyball-scroll/.swiftpm/
+qmk_firmware/*.hex

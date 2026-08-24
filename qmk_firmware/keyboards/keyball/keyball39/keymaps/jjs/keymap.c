@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include QMK_KEYBOARD_H
 
 #include "quantum.h"
+#include "scroll_bridge.h"
 
 enum custom_keycodes {
     BTN3_SCRL = KEYBALL_SAFE_RANGE,
@@ -27,6 +28,12 @@ enum custom_keycodes {
 static bool     btn3_scroll_held;
 static bool     btn3_scroll_used;
 static uint16_t btn3_scroll_timer;
+
+void scroll_bridge_on_motion(void) {
+    if (btn3_scroll_held) {
+        btn3_scroll_used = true;
+    }
+}
 
 const uint16_t PROGMEM fd_escape_combo[] = {LGUI_T(KC_F), LALT_T(KC_D),
                                             COMBO_END};
@@ -72,7 +79,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  
 
   [3] = LAYOUT_universal(
-    RM_TOGG  , AML_TO   , AML_I50  , AML_D50  , _______  ,                            _______  , _______  , SSNP_HOR , SSNP_VRT , SSNP_FRE ,
+    RGB_TOG  , AML_TO   , AML_I50  , AML_D50  , _______  ,                            _______  , _______  , SSNP_HOR , SSNP_VRT , SSNP_FRE ,
    RGB_MOD   , RGB_HUI  , RGB_SAI  , RGB_VAI  , SCRL_DVI ,                            KC_LEFT, KC_DOWN  , KC_UP  , KC_RIGHT  , _______  ,
     RGB_RMOD , RGB_HUD  , RGB_SAD  , RGB_VAD  , SCRL_DVD ,                            CPI_D1K  , CPI_D100 , CPI_I100 , CPI_I1K  , KBC_SAVE ,
     QK_BOOT  , KBC_RST  , _______  , _______  , _______  , _______  ,      _______  , _______  , _______  , _______  , KBC_RST  , QK_BOOT
@@ -131,18 +138,11 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 #ifdef OLED_ENABLE
 
 #include "lib/oledkit/oledkit.h"
-#include "oled_art.h"
 static void render_oled_status(void) {
     keyball_oled_render_keyinfo();
     keyball_oled_render_ballinfo();
     keyball_oled_render_layerinfo();
 }
 
-static void render_oled_offhand_test(void) {
-    oled_write_raw_P(hello_oled, sizeof(hello_oled));
-}
-
 void oledkit_render_info_user(void) { render_oled_status(); }
-
-void oledkit_render_logo_user(void) { render_oled_offhand_test(); }
 #endif

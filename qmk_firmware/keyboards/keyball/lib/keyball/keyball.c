@@ -59,6 +59,14 @@ keyball_t keyball = {
 
 __attribute__((weak)) void keyball_on_adjust_layout(keyball_adjust_t v) {}
 
+__attribute__((weak)) bool keyball_on_require_hires_scroll(void) {
+    return false;
+}
+
+__attribute__((weak)) bool keyball_on_process_scroll_report(report_mouse_t *report) {
+    return false;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Static utilities
 
@@ -212,7 +220,7 @@ __attribute__((weak)) void keyball_on_apply_motion_to_mouse_scroll(keyball_motio
     int16_t div = 1 << (keyball_get_scroll_div() - 1);
 #ifdef POINTING_DEVICE_HIRES_SCROLL_ENABLE
     os_variant_t os    = detected_host_os();
-    bool         hires = os == OS_LINUX || os == OS_WINDOWS;
+    bool         hires = os == OS_LINUX || os == OS_WINDOWS || keyball_on_require_hires_scroll();
     int16_t      x     = hires ? divmod16_hires(&m->x, div) : divmod16(&m->x, div);
     int16_t      y     = hires ? divmod16_hires(&m->y, div) : divmod16(&m->y, div);
 #else
@@ -262,6 +270,11 @@ __attribute__((weak)) void keyball_on_apply_motion_to_mouse_scroll(keyball_motio
             break;
     }
 #endif
+
+    if (keyball_on_process_scroll_report(r)) {
+        r->h = 0;
+        r->v = 0;
+    }
 }
 
 static void motion_to_mouse(keyball_motion_t *m, report_mouse_t *r, bool is_left, bool as_scroll) {

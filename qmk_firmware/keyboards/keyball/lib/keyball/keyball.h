@@ -208,6 +208,15 @@ void keyball_on_apply_motion_to_mouse_move(keyball_motion_t *m, report_mouse_t *
 /// You can change the default algorithm by override this function.
 void keyball_on_apply_motion_to_mouse_scroll(keyball_motion_t *m, report_mouse_t *r, bool is_left);
 
+/// keyball_on_require_hires_scroll returns true when a user transport needs
+/// high-resolution scroll deltas even if the detected host does not enable
+/// the HID resolution multiplier.
+bool keyball_on_require_hires_scroll(void);
+
+/// keyball_on_process_scroll_report can forward a generated scroll report to
+/// another transport. Return true to consume its wheel deltas.
+bool keyball_on_process_scroll_report(report_mouse_t *report);
+
 //////////////////////////////////////////////////////////////////////////////
 // Public API functions
 
