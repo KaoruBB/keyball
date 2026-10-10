@@ -1,0 +1,20 @@
+{
+  "side": "left",
+  "captured_at_utc": "20261010T062915Z",
+  "usb_path": "1-7",
+  "files": {
+    "flash.bin": {
+      "size": 32762,
+      "sha256": "96bfe28f7c0a964438f1982ace0f0c1e1a4244dd992bc1444357ec36f628c52f"
+    },
+    "eeprom.bin": {
+      "size": 1024,
+      "sha256": "31e0281edf2c2d71dfd2d65d22cb4b3222dae9734d8be4541991fc89d94e2bdb"
+    },
+    "application.hex": {
+      "size": 78860,
+      "sha256": "7755cb00fb2cb7b119a6347d2df449ce8cc628a2ade207df8055c22dfd52d46c"
+    }
+  },
+  "restore_note": "Use application.hex for flash restoration; flash.bin includes bootloader bytes and may omit trailing 0xFF. Restore EEPROM with the original application."
+}

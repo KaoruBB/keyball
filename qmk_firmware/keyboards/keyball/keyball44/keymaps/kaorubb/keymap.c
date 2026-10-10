@@ -24,7 +24,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,         KC_Q,           KC_W,           KC_E,       KC_R,       KC_T,       KC_Y,       KC_U,       KC_I,       KC_O,           KC_P,               KC_EQL,
         LCTL_T(KC_ESC), LCTL_T(KC_A),   LGUI_T(KC_S),   KC_D,       KC_F,       KC_G,       KC_H,       KC_J,       KC_K,       RGUI_T(KC_L),   RCTL_T(KC_SCLN),    RCTL_T(KC_QUOT),
         KC_LSFT,        KC_Z,           KC_X,           KC_C,       KC_V,       KC_B,       KC_N,       KC_M,       KC_COMM,    KC_DOT,         KC_SLSH,            RSFT_T(KC_MINS),
-        KC_NO, LT(LINUX_SETTINGS, KC_MUTE), TT(LINUX_NUM), LALT_T(KC_SPC), KC_BSPC,       KC_RSFT, KC_RALT, RCTL_T(KC_ENT)
+        KC_NO, LT(LINUX_SETTINGS, KC_KB_MUTE), TT(LINUX_NUM), LALT_T(KC_SPC), KC_BSPC,    KC_RSFT, KC_RALT, RCTL_T(KC_ENT)
     ),
 
     [LINUX_NUM] = LAYOUT_right_ball(
@@ -37,13 +37,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [LINUX_SHORTCUT] = LAYOUT_right_ball(
         KC_LALT,        LCTL(KC_1),     LCTL(KC_2),     LCTL(KC_3), LCTL(KC_4), LCTL(KC_5), KC_F6,          KC_F7,      KC_F8,      LCA(KC_O),      LCA(KC_P),          LCA(KC_R),
         KC_TRNS,        LCTL(KC_6),     LCTL(KC_7),     LCTL(KC_8), LCTL(KC_9), LCTL(KC_0), LCA(KC_H),      LCA(KC_J),  LCA(KC_K),  LCA(KC_L),      KC_LNG1,            KC_TRNS,
-        KC_TRNS,        LCA(KC_1),      LCA(KC_2),      LCA(KC_3),  LCA(KC_4),  LCA(KC_5),  LCA(KC_N),      LCA(KC_M),  KC_TRNS,    KC_TRNS,        KC_INT2,            KC_TRNS,
+        KC_TRNS,        LCA(KC_1),      LCA(KC_2),      LCA(KC_3),  LCA(KC_4),  LCA(KC_5),  LCA(KC_N),      LCA(KC_M),  KC_TRNS,    KC_TRNS,        KC_LNG4,            KC_TRNS,
         KC_0, KC_DOT, KC_LSFT, KC_LGUI, LCA(KC_BSPC),                                   KC_RGUI, KC_RSFT, KC_TRNS
     ),
 
     [LINUX_SETTINGS] = LAYOUT_right_ball(
-        UG_TOGG,        KC_F1,          KC_F2,          KC_F3,      KC_F4,      KC_F5,      KC_F6,          KC_F7,      KC_F12,     KC_F9,          KC_MUTE,            KC_VOLD,
-        KC_LCTL,        LCTL_T(KC_F11), KC_F12,         KC_F13,     KC_F14,     KC_F15,     KC_LEFT,        KC_DOWN,    KC_UP,      KC_RGHT,        KC_TRNS,            KC_VOLU,
+        UG_TOGG,        KC_F1,          KC_F2,          KC_F3,      KC_F4,      KC_F5,      KC_F6,          KC_F7,      KC_F12,     KC_F9,          KC_KB_MUTE,         KC_KB_VOLUME_DOWN,
+        KC_LCTL,        LCTL_T(KC_F11), KC_F12,         KC_F13,     KC_F14,     KC_F15,     KC_LEFT,        KC_DOWN,    KC_UP,      KC_RGHT,        KC_TRNS,            KC_KB_VOLUME_UP,
         UG_PREV,        RGB_M_P,        RGB_M_B,        UG_SPDU,    UG_SPDD,    RGB_M_R,    RGB_M_TW,       RGB_M_T,    RGB_M_X,    DB_TOGG,        KC_F20,             KBC_SAVE,
         KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_LINUX, PROFILE_MAC,                  KC_TRNS, KC_TRNS, HYPR(KC_K)
     ),
@@ -52,7 +52,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TAB,         KC_Q,           KC_W,           KC_E,       KC_R,       KC_T,       KC_Y,           KC_U,       KC_I,       KC_O,           KC_P,               KC_EQL,
         LCTL_T(KC_ESC), LCTL_T(KC_A),   LALT_T(KC_S),   KC_D,       KC_F,       KC_G,       KC_H,           KC_J,       KC_K,       RALT_T(KC_L),   RCTL_T(KC_SCLN),    RCTL_T(KC_QUOT),
         KC_LSFT,        KC_Z,           KC_X,           KC_C,       KC_V,       KC_B,       KC_N,           KC_M,       KC_COMM,    KC_DOT,         KC_SLSH,            RSFT_T(KC_MINS),
-        LCTL_T(KC_F3), LT(MAC_SETTINGS, KC_MUTE), TT(MAC_NUM), KC_SPC, KC_BSPC,           KC_RSFT, KC_LGUI, RCTL_T(KC_ENT)
+        LCTL_T(KC_F3), LT(MAC_SETTINGS, KC_KB_MUTE), TT(MAC_NUM), KC_SPC, KC_BSPC,        KC_RSFT, KC_LGUI, RCTL_T(KC_ENT)
     ),
 
     [MAC_NUM] = LAYOUT_right_ball(
@@ -65,13 +65,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [MAC_SHORTCUT] = LAYOUT_right_ball(
         KC_LALT,        LCTL(KC_1),     LCTL(KC_2),     LCTL(KC_3), LCTL(KC_4), LCTL(KC_5), KC_F6,          KC_F7,      KC_F8,      LCA(KC_O),      LCA(KC_P),          LCA(KC_R),
         KC_TRNS,        LCTL(KC_6),     LCTL(KC_7),     LCTL(KC_8), LCTL(KC_9), LCTL(KC_0), LCA(KC_H),      LCA(KC_J),  LCA(KC_K),  LCA(KC_L),      KC_LNG1,            KC_TRNS,
-        KC_TRNS,        LCA(KC_1),      LCA(KC_2),      LCA(KC_3),  LCA(KC_4),  LCA(KC_5),  LCA(KC_N),      LCA(KC_M),  KC_TRNS,    KC_TRNS,        KC_INT2,            KC_TRNS,
+        KC_TRNS,        LCA(KC_1),      LCA(KC_2),      LCA(KC_3),  LCA(KC_4),  LCA(KC_5),  LCA(KC_N),      LCA(KC_M),  KC_TRNS,    KC_TRNS,        KC_LNG4,            KC_TRNS,
         KC_0, KC_DOT, KC_LSFT, KC_LGUI, LCA(KC_BSPC),                                   KC_RSFT, KC_LGUI, KC_TRNS
     ),
 
     [MAC_SETTINGS] = LAYOUT_right_ball(
-        UG_TOGG,        KC_F1,          KC_F2,          KC_F3,      KC_F4,      KC_F5,      KC_F6,          KC_F7,      KC_F8,      KC_F9,          KC_MUTE,            KC_VOLD,
-        KC_LCTL,        LCTL_T(KC_F11), KC_F12,         KC_F13,     KC_F14,     KC_F15,     KC_LEFT,        KC_DOWN,    KC_UP,      KC_RGHT,        KC_TRNS,            KC_VOLU,
+        UG_TOGG,        KC_F1,          KC_F2,          KC_F3,      KC_F4,      KC_F5,      KC_F6,          KC_F7,      KC_F8,      KC_F9,          KC_KB_MUTE,         KC_KB_VOLUME_DOWN,
+        KC_LCTL,        LCTL_T(KC_F11), KC_F12,         KC_F13,     KC_F14,     KC_F15,     KC_LEFT,        KC_DOWN,    KC_UP,      KC_RGHT,        KC_TRNS,            KC_KB_VOLUME_UP,
         UG_PREV,        RGB_M_P,        RGB_M_B,        UG_SPDU,    UG_SPDD,    RGB_M_R,    RGB_M_TW,       RGB_M_T,    RGB_M_X,    DB_TOGG,        KC_F20,             KBC_SAVE,
         KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_LINUX, PROFILE_MAC,                  KC_TRNS, KC_TRNS, HYPR(KC_K)
     ),

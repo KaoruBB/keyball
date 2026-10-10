@@ -1,5 +1,5 @@
 """Check the built AVR firmware against key positions transcribed from the Remap PDFs."""
-import re, struct, subprocess, unittest
+import json, re, struct, subprocess, unittest
 from pathlib import Path
 
 
@@ -44,8 +44,8 @@ class FirmwareTest(unittest.TestCase):
         self.assertEqual(self.row(4,1), (0x2129,0x2104,0x2416,0x07,0x09,0x0a))
         self.assertEqual(self.row(0,5), (0x3134,0x3133,0x380f,0x0e,0x0d,0x0b))
         self.assertEqual(self.row(4,5), (0x3134,0x3133,0x340f,0x0e,0x0d,0x0b))
-        self.assertEqual(self.row(0,3)[1:], (0,0x43a8,0x52c1,0x242c,0x2a))
-        self.assertEqual(self.row(4,3)[1:], (0x213c,0x47a8,0x52c5,0x2c,0x2a))
+        self.assertEqual(self.row(0,3)[1:], (0,0x437f,0x52c1,0x242c,0x2a))
+        self.assertEqual(self.row(4,3)[1:], (0x213c,0x477f,0x52c5,0x2c,0x2a))
         self.assertEqual(self.row(0,7), (0,0x3128,0,0,0xe6,0xe5))
         self.assertEqual(self.row(4,7), (0,0x3128,0,0,0xe3,0xe5))
 
@@ -63,8 +63,8 @@ class FirmwareTest(unittest.TestCase):
     def test_settings_and_profile_selection(self):
         for layer in (3,7):
             self.assertEqual(self.row(layer,3)[4:], (0x7e40,0x7e41))
-            self.assertEqual(self.row(layer,5)[0], 0xa9)  # Volume up
-            self.assertEqual(self.row(layer,4)[0:2], (0xaa,0xa8))  # Volume down, Mute
+            self.assertEqual(self.row(layer,5)[0], 0x80)  # Keyboard Volume up
+            self.assertEqual(self.row(layer,4)[0:2], (0x81,0x7f))  # Keyboard Volume down, Mute
             self.assertEqual(self.row(layer,3)[1:3], (0x7e00,0x7e00))  # PDF's two Keyball reset keys
         self.assertEqual(self.row(3,4)[3], 0x45)  # Linux F12
         self.assertEqual(self.row(7,4)[3], 0x41)  # Mac F8
@@ -74,6 +74,34 @@ class FirmwareTest(unittest.TestCase):
             self.assertEqual(self.row(layer,0), (0xe2,0x011e,0x011f,0x0120,0x0121,0x0122))
             self.assertEqual(self.row(layer,2), (1,0x051e,0x051f,0x0520,0x0521,0x0522))
             self.assertEqual(self.row(layer,4), (0x0515,0x0513,0x0512,0x41,0x40,0x3f))
+
+    def test_linux_matches_live_via_backup(self):
+        backup = Path(__file__).resolve().parents[6]/'keyball44/doc/recovery/right-linux-via-readback.json'
+        layers = json.loads(backup.read_text())['layers']
+        # Missing switches under the ball and new profile selectors have no old key to reproduce.
+        unused = {18,42,44,45}
+        changed = {(0,19): 0, (2,46): 0xe5, (3,22): 0x7e40, (3,23): 0x7e41}
+        for layer in range(4):
+            for pos,old in enumerate(layers[layer]):
+                if pos in unused: continue
+                with self.subTest(layer=layer, row=pos//6, col=pos%6):
+                    self.assertEqual(self.keys[layer][pos], changed.get((layer,pos),old))
+
+    def test_mac_matches_live_via_backup_with_documented_changes(self):
+        backup = Path(__file__).resolve().parents[6]/'keyball44/doc/recovery/left-mac-via-readback.json'
+        layers = json.loads(backup.read_text())['layers']
+        unused = {18,42,44,45}
+        changed = {
+            (0,20): 0x477f, (0,21): 0x52c5,  # local layers 3/1 become 7/5
+            (2,46): 0xe3,  # 0x10e3 has a right-side marker with no mods; it sends Left GUI
+            (3,7): 0x2144,  # user prefers PDF's Ctrl/F11 over the live plain F11
+            (3,22): 0x7e40, (3,23): 0x7e41,
+        }
+        for layer in range(4):
+            for pos,old in enumerate(layers[layer]):
+                if pos in unused: continue
+                with self.subTest(layer=layer, row=pos//6, col=pos%6):
+                    self.assertEqual(self.keys[layer+4][pos], changed.get((layer,pos),old))
 
 
 if __name__ == '__main__': unittest.main()

@@ -1,6 +1,7 @@
 # kaorubb: Linux US / Mac US
 
 Keyball44の右ボール用、VIA無効の個人キーマップ。
+QMK 0.29.0の左右判定は`SPLIT_HAND_MATRIX_GRID_LOW_IS_LEFT`で基板の極性に合わせる。
 配列の正本は`keymap.c`。Linuxの4レイヤーを0〜3、Macを4〜7へ配置する。
 Windows用（8〜11）と専用マウスレイヤー（12）は後続ステップで追加する。
 
@@ -12,7 +13,7 @@ Windows用（8〜11）と専用マウスレイヤー（12）は後続ステッ�
 
 - 起動時はLinux US。OS選択はEEPROMに保存しない。
 - 左親指のMuteをホールドすると、各プロファイルのLayer 3に入る。
-  Muteはタップで送信する（`LT(..., KC_MUTE)`）。
+  Muteはタップで送信する（`LT(..., KC_KB_MUTE)`）。
 - Layer 3で左Space位置を押すとLinux、左Backspace位置を押すとMac。
   別OSへの切替時は一時レイヤーを解除する。同じOSを再選択した場合は状態を維持する。
   保持していたキーは離してから入力を再開する。
@@ -47,7 +48,9 @@ Layer 2のCtrl+数字も同時入力として保存する。
 | Layer 3のI位置 | LinuxはF12、MacはF8（PDFの違いをそのまま保存） |
 | Linux Layer 0左下の透明キー | 下位レイヤーがないので`KC_NO`（入力なし） |
 | Layer 3のSpace/Backspace位置 | PDFの透明キーからLinux/Mac選択キーへ変更 |
-| Muteと音量 | `EXTRAKEY_ENABLE = yes`でメディアキーを有効化 |
+| Muteと音量 | 実機のVIA読み取り結果に合わせてKeyboard Mute / Volumeを使用。Consumerキー用の`EXTRAKEY`は無効 |
+| Layer 2のJIS Hiragana | 実機で`KC_LNG4`と確認。International 2ではなくLanguage 4を使用 |
+| Mac Layer 3のQ位置 | 実機の通常F11から、利用者の選択でPDFのCtrl/F11へ変更 |
 | OLED | キー位置の表示行をOS名とプロファイル内のレイヤー番号へ変更。ボール・CPI・スクロール・自動マウス表示は維持 |
 | LED | 利用者の選択によりSnake・Knight・Static Gradient・Alternatingを無効化 |
 
