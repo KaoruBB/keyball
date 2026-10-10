@@ -18,6 +18,11 @@ See each directories for each keyboards in a table above.
 
 ## How to build
 
+For this fork's local Nix environment, use the
+[Keyball44 migration guide](../../../keyball44/doc/qmk-migration.md#step-2nix開発環境).
+It pins QMK to 0.29.0, matching `build-user.yml`. The upstream instructions
+below describe the older 0.22.14 setup.
+
 1. Check out this repository.
 
     ```console
