@@ -29,10 +29,18 @@ class FirmwareTest(unittest.TestCase):
         self.assertEqual(self.symbols['default_layer_state'][1], 2)
 
     def test_right_ball_geometry(self):
-        self.assertEqual(len(self.keys), 8)
+        self.assertEqual(len(self.keys), 13)
         for layer in self.keys:
             for row,col in ((3,0), (7,0), (7,2), (7,3)):
                 self.assertEqual(layer[row*6+col], 0)
+
+    def test_common_mouse_layer(self):
+        unused = {18,42,44,45}
+        actions = {38: 0x7e07, 40: 0xd1, 39: 0xd2}  # Dot scroll, M left click, comma right click
+        for pos,key in enumerate(self.keys[12]):
+            with self.subTest(pos=pos):
+                self.assertEqual(key, 0 if pos in unused else actions.get(pos,1))
+        for layer in self.keys[8:12]: self.assertEqual(layer, (0,)*48)
 
     def test_base_typing_and_modifiers(self):
         for layer in (0,4):

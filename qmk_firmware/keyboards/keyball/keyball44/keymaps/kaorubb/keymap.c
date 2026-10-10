@@ -10,6 +10,8 @@ enum layers {
     MAC_NUM,
     MAC_SHORTCUT,
     MAC_SETTINGS,
+    // Layers 8–11 are reserved for the Windows profile.
+    MOUSE = 12,
 };
 
 enum custom_keycodes {
@@ -75,13 +77,22 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         UG_PREV,        RGB_M_P,        RGB_M_B,        UG_SPDU,    UG_SPDD,    RGB_M_R,    RGB_M_TW,       RGB_M_T,    RGB_M_X,    DB_TOGG,        KC_F20,             KBC_SAVE,
         KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_LINUX, PROFILE_MAC,                  KC_TRNS, KC_TRNS, HYPR(KC_K)
     ),
+    [MOUSE] = LAYOUT_right_ball(
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_BTN1, KC_BTN2, SCRL_MO, KC_TRNS, KC_TRNS,
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,          KC_TRNS, KC_TRNS, KC_TRNS
+    ),
 };
 
+static uint8_t scroll_keys;
+
 static void select_profile(uint8_t base) {
-    // Clear the old auto-mouse layer before changing its target (QMK ownership rule).
+    scroll_keys = 0;
+    set_auto_mouse_enable(false);
     layer_clear();
     default_layer_set((layer_state_t)1 << base);
-    set_auto_mouse_layer(base + 1);
+    set_auto_mouse_enable(true);
     keyball_set_scroll_mode(false);
 }
 
@@ -91,6 +102,14 @@ void keyboard_post_init_user(void) {
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
+        case SCRL_MO: {
+            // Track the left and right scroll keys independently across layer changes.
+            uint8_t key = record->event.key.row < MATRIX_ROWS / 2 ? 1 : 2;
+            if (record->event.pressed) scroll_keys |= key;
+            else scroll_keys &= ~key;
+            keyball_set_scroll_mode(scroll_keys || layer_state_cmp(layer_state, get_highest_layer(default_layer_state) + 3));
+            return false;
+        }
         case PROFILE_LINUX:
             if (record->event.pressed && get_highest_layer(default_layer_state) != LINUX_BASE) select_profile(LINUX_BASE);
             return false;
@@ -104,8 +123,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 layer_state_t layer_state_set_user(layer_state_t state) {
     uint8_t base = get_highest_layer(default_layer_state);
     // TT inverts its layer on release; a held key from the old profile must not restore that layer.
-    state &= (layer_state_t)0xF << base;
-    keyball_set_scroll_mode(layer_state_cmp(state, base + 3));
+    layer_state_t profile_layers = (layer_state_t)0xF << base;
+    state &= profile_layers | ((layer_state_t)1 << MOUSE);
+    bool manual_layer = (state & profile_layers) != 0;
+    if (manual_layer) state = remove_auto_mouse_layer(state, true);
+    set_auto_mouse_enable(!manual_layer);
+    keyball_set_scroll_mode(scroll_keys || layer_state_cmp(state, base + 3));
     return state;
 }
 
@@ -116,9 +139,14 @@ void oledkit_render_info_user(void) {
     uint8_t base = get_highest_layer(default_layer_state);
     oled_set_cursor(0, 0);
     // Four OLED rows: profile, ball motion, ball settings, layer/auto-mouse status.
-    oled_write_P(base == MAC_BASE ? PSTR("Mac US   L") : PSTR("Linux US L"), false);
-    oled_write_char('0' + get_highest_layer(layer_state | default_layer_state) - base, false);
-    oled_write_P(PSTR("          "), false);
+    oled_write_P(base == MAC_BASE ? PSTR("Mac US   ") : PSTR("Linux US "), false);
+    if (layer_state_cmp(layer_state, MOUSE)) {
+        oled_write_P(PSTR("Mouse       "), false);
+    } else {
+        oled_write_char('L', false);
+        oled_write_char('0' + get_highest_layer(layer_state | default_layer_state) - base, false);
+        oled_write_P(PSTR("          "), false);
+    }
     keyball_oled_render_ballinfo();
     keyball_oled_render_layerinfo();
 }
