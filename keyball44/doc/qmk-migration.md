@@ -113,15 +113,16 @@ EEPROMへ保存されていなかった一時設定については、移行前�
 
 ```sh
 # 既存defaultキーマップをビルド。初回はQMK本体とサブモジュールも取得する。
-bash bin/nix-develop.sh --command bash bin/build-keyball44.sh default
+bash bin/build-keyball44.sh default
 
 # 個人用キーマップ追加後のビルド例
-bash bin/nix-develop.sh --command bash bin/build-keyball44.sh kaorubb
+bash bin/build-keyball44.sh kaorubb
 ```
 
-`bin/nix-develop.sh`はflakeとlockだけを`tmp/nix-shell/`へコピーしてNixを起動する。
-そのためflakeをGitに追加する前でも実行でき、巨大なQMK checkoutをNixストアにコピーしない。
-対話的に開発シェルへ入る場合は`bash bin/nix-develop.sh`を実行する。
+現在は`.envrc`の`use flake .`とnix-direnvで開発環境を読み込む。
+初回はリポジトリ直下で`direnv allow`を実行し、その環境で上のコマンドを実行する。
+`tmp/`はGit管理対象外であり、通常のGit flake評価には含まれない。
+対話的に環境へ入る別の方法として`nix develop`も使える。
 ビルド結果は`tmp/qmk-0.29.0/keyball_keyball44_default.hex`。
 セットアップは既存のcheckoutを削除・リセットせず再利用し、期待したQMK版でない場合は停止する。
 QMKのユーザー共通設定やシステム環境の変更、実機への書き込みは行わない。
@@ -135,7 +136,7 @@ QMKのユーザー共通設定やシステム環境の変更、実機への書�
 - `flake.lock`生成成功。Nixpkgsコミットは`7c8764b7c7b09b34f632464276218ef9090eaa11`。
 - QMK本体と全サブモジュールの取得成功。QMK本体は指定コミットと一致。
 - QMK CLI 1.2.0、avr-gcc 15.3.0、avrdude 8.1を確認。
-- 既存`default`のビルドと、`bin/nix-develop.sh`を使う再実行が成功。
+- 既存`default`のビルドと当時のNixラッパーでの再実行が成功。現在の手順はdirenvへ移行した。
 - 生成hexのSHA256：`1ab249e660d083f7c9d9bbec6b652da62e7b5cb495a5b29b7e2b70c429996daf`。
 - ファームウェア容量：27,752 / 28,672 bytes（96%、残り920 bytes）。
 - 3本のスクリプトは`bash -n`で構文確認済み。
@@ -222,7 +223,7 @@ sudoパスワードはターミナルへ入力し、チャットには送らな�
 現在USB接続している左側のバックアップ：
 
 ```sh
-bash bin/nix-develop.sh --command python3 bin/keyball44-avr.py backup left --sudo
+python3 bin/keyball44-avr.py backup left --sudo
 ```
 
 パスワード入力後、`Press the physical reset button twice now`と表示されたら、
@@ -233,7 +234,7 @@ USB接続している側の物理リセットボタンを素早く2回押す。
 左側を新しいファームウェアへ書き込むコマンド（バックアップ成功を確認してから実行）：
 
 ```sh
-bash bin/nix-develop.sh --command python3 bin/keyball44-avr.py flash left --sudo
+python3 bin/keyball44-avr.py flash left --sudo
 ```
 
 書き込み前に配列表テストを実行し、SHA256を表示する。再度リセットを待ち受け、
@@ -254,9 +255,9 @@ EEPROMの設定が再初期化される。動作確認時にCPI・スクロー�
 
 ```sh
 # 左側を元のMac用配列へ戻す
-bash bin/nix-develop.sh --command python3 bin/keyball44-avr.py restore left --sudo --backup keyball44/doc/recovery/left-avr-backup-20261010T062915Z
+python3 bin/keyball44-avr.py restore left --sudo --backup keyball44/doc/recovery/left-avr-backup-20261010T062915Z
 # 右側を元のLinux用配列へ戻す
-bash bin/nix-develop.sh --command python3 bin/keyball44-avr.py restore right --sudo --backup keyball44/doc/recovery/right-avr-backup-20261010T064317Z
+python3 bin/keyball44-avr.py restore right --sudo --backup keyball44/doc/recovery/right-avr-backup-20261010T064317Z
 ```
 
 対象側のUSB接続と物理リセットは書き込み時と同じ手順。
@@ -341,4 +342,69 @@ HEXのSHA256：`ae7cd08903ae1957189da5a32a207bb2f09cbb0d03d4e5d373e0aeb6dbe4c78f
 - 別個体の導入・書き込み手順は個人キーマップのREADME.orgへ集約。
   利用者の指定によりバックアップは任意とし、書き込み時のバックアップ必須チェックを削除した。
   任意の保存手順と既存バックアップは維持する。
-- Windows JIS（Step 6）は未着手。
+- Step 6は利用者が承認し、Windows JISを追加した（下記参照）。
+
+
+## Step 6：Windows JISと運用手順
+
+Windows用の4レイヤーを8〜11へ追加。12の共通マウスレイヤーを3プロファイルで使う。
+Mute保持中に左Space位置＝Linux、左Backspace位置＝Mac、右Shift位置＝Windows。
+起動時はLinux。WindowsのOLED表示は`Win JIS L0`または`Win JIS Mouse`。
+
+Windows配列の基礎はLinux。Windows側をJIS（106/109キー）に設定し、
+QMK 0.29.0のKey OverridesでShiftなし・ありの記号を補正する。
+Mod-Tapのタップも補正し、ホールドのCtrl/GUI/Shiftは維持する。
+OS切替時には補正中のキーを解除し、旧プロファイルのレイヤーが復活しない処理も維持する。
+
+- 左Spaceのすぐ左（LinuxでTTの位置）を`LT(WIN_NUM, KC_LNG2)`へ変更。
+  タップでIMEオフ、ホールドで数字レイヤー。Windowsでは5回タップによる固定切替なし。
+- 右親指Alt位置は`RALT_T(KC_LNG1)`。タップでIMEオン、ホールドで右Alt。
+  数字レイヤーでもこの位置を透明にして同じ動作を使う。
+- 左下の空きキーとEnterはLinuxと同じ配置。Linux/MacとSKKの操作は維持する。
+- 標準IMEのImeOff/ImeOnを直接送るため、対応するWindowsで追加ソフトやキー再設定は不要。
+- Windows数字レイヤーの右上端（LinuxではAlt）をYenキーへ変更する。
+- 数字レイヤーの右Enter位置のCtrl+Shift+セミコロンは、JISのCtrl+コロンへ置き換える。
+- Layer 2は参照として維持し、入口は追加しない。
+- 既存の左Zスクロール、M/カンマ/ピリオドの自動マウス、数字・設定レイヤーの優先を維持する。
+
+最初のビルドは30,202 / 28,672 bytesで、1,530 bytes超過した。
+利用者がPlainとオン／オフを残し、アニメーション6種類を外すことを承認。
+Breathing・Rainbow Mood・Rainbow Swirl・Christmas・RGB Test・Twinkleを無効にした。
+LED選択キー自体は既存配列へ残すが、アニメーションは使用できない。
+
+Windows実機は帰宅後に利用者が確認する予定。現時点はビルド済み・Windows実機未検証。
+[個人キーマップREADME](../../qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/README.org#windows-jisstep-6)
+に記号対応表、IMEの設定と検証項目を記録した。
+
+参考：
+[QMK Key Overrides](https://docs.qmk.fm/features/key_overrides)、
+[Microsoft ImeOn / ImeOff仕様](https://learn.microsoft.com/ja-jp/windows-hardware/design/component-guidelines/keyboard-japan-ime)。
+
+### ビルド・検証結果
+
+- 最終ビルド：27,714 / 28,672 bytes（残り958 bytes）。容量接近の警告あり、コンパイラ警告なし。
+- 生成HEX/ELFによる11件の配列表テストが成功。3プロファイルの配列・選択キー・
+  IMEキー、コンパイル済み20件の記号補正、補正がWindowsフラグに限定されることを確認した。
+  入力タイミングやWindowsでの実際の文字出力は、実機確認で検証する。
+- ビルド検証済みHEXを`recovery/keyball44-kaorubb-step6.hex`へ保管（実機未検証）。
+- SHA256：`08a3cf15dfb9889b8fb3a6f33472c32509cf15cd49f503d2f798b4a11ea2a51c`。
+- 対応するソースは`git log -1 -- qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/keymap.c`で確認する。
+- 左右への書き込みとLinux/Macの回帰確認、帰宅後のWindows実機確認は未実施。
+
+RAMの静的使用量はdata 570 + bss 1,118 = 1,688 / 2,560 bytes。スタック等に残り872 bytes。
+個人キーマップREADMEのOrg形式への変更を維持し、参照リンクと任意バックアップの記述を合わせた。
+
+
+## direnvへの移行と別PCの確認
+
+`.envrc`と`.gitignore`のdirenv設定は利用者が追加した。
+ドキュメントを直接実行するコマンドへ更新し、不要になったNixラッパーを削除した。
+Linuxで`direnv exec . bash bin/build-keyball44.sh kaorubb`が成功。
+MacではLinux専用の`bin/keyball44-avr.py`を使わず、QMK標準の`:avrdude`ターゲットを使う。
+Mac実機と別のKeyball44でのビルド・書き込み・動作確認は利用者が今後実施する。
+詳細と記録項目は個人キーマップのREADME.orgに集約した。
+
+- direnv環境で11件の配列表テストが成功。最終HEXは27,714 bytes、残り958 bytes。
+- Apple Silicon MacのdevShellはLinuxホストから評価成功。Mac上のビルド・USB書き込みは未検証。
+- Intel MacのdevShellは、固定NixpkgsのQMKに含まれる`gcc-arm-embedded-15.2.rel1`が
+  `x86_64-darwin`非対応のため評価失敗。Intelで試す場合は依存構成の調整が必要。

@@ -1,4 +1,4 @@
-"""Check the built AVR firmware against key positions transcribed from the Remap PDFs."""
+"""Check the built AVR keymap and Windows JIS translations."""
 import json, re, struct, subprocess, unittest
 from pathlib import Path
 
@@ -10,6 +10,9 @@ class FirmwareTest(unittest.TestCase):
         stem = 'keyball_keyball44_kaorubb'
         output = subprocess.check_output(['avr-nm', '-S', '--defined-only', str(qmk/'.build'/f'{stem}.elf')], text=True)
         cls.symbols = {name: (int(addr,16),int(sz,16)) for addr,sz,name in re.findall(r'^([0-9a-f]+) ([0-9a-f]+) \w (\S+)$', output, re.M)}
+        sections = subprocess.check_output(['avr-objdump', '-h', str(qmk/'.build'/f'{stem}.elf')], text=True)
+        match = re.search(r'\s\d+ \.data\s+[0-9a-f]+\s+([0-9a-f]+)\s+([0-9a-f]+)', sections)
+        cls.data_vma,cls.data_lma = (int(o,16) for o in match.groups())
         cls.memory = {}
         for line in (qmk/f'{stem}.hex').read_text().splitlines():
             record = bytes.fromhex(line[1:])
@@ -40,7 +43,35 @@ class FirmwareTest(unittest.TestCase):
         for pos,key in enumerate(self.keys[12]):
             with self.subTest(pos=pos):
                 self.assertEqual(key, 0 if pos in unused else actions.get(pos,1))
-        for layer in self.keys[8:12]: self.assertEqual(layer, (0,)*48)
+
+    def test_compiled_jis_overrides(self):
+        addr,sz = self.symbols['jis_overrides']
+        addr += self.data_lma-self.data_vma
+        data = bytes(self.memory[i] for i in range(addr,addr+sz))
+        rows = list(struct.iter_unpack('<HBHBBHBHHH', data))
+        expected = [
+            (0x35,0,0x022f), (0x35,0x22,0x022e), (0x1f,0x22,0x2f),
+            (0x23,0x22,0x2e), (0x24,0x22,0x0223), (0x25,0x22,0x0234),
+            (0x26,0x22,0x0225), (0x27,0x22,0x0226), (0x2d,0x22,0x0287),
+            (0x2e,0,0x022d), (0x2e,0x22,0x0233), (0x2f,0,0x30),
+            (0x2f,0x22,0x0230), (0x30,0,0x32), (0x30,0x22,0x0232),
+            (0x33,0x22,0x34), (0x34,0,0x0224), (0x34,0x22,0x021f),
+            (0x31,0,0x87), (0x31,0x22,0x0289),
+        ]
+        self.assertEqual([(r[0],r[1],r[5]) for r in rows], expected)
+        for row in rows:
+            self.assertEqual(row[2], 0xffff)
+            self.assertEqual(row[3], 0 if row[1] else 0x22)
+            self.assertEqual(row[4], 0x22)
+            self.assertEqual(row[-1], self.symbols['windows_profile'][0]-0x800000)
+
+    def test_windows_layers_and_ime(self):
+        changed = {(0,20): 0x4b7f, (0,21): 0x4991, (0,46): 0x3490,
+                   (1,24): 0x89, (1,46): 1, (1,43): 0x0134, (2,37): 0x91}
+        for layer in range(4):
+            for pos,key in enumerate(self.keys[layer]):
+                with self.subTest(layer=layer, pos=pos):
+                    self.assertEqual(self.keys[layer+8][pos], changed.get((layer,pos),key))
 
     def test_base_typing_and_modifiers(self):
         for layer in (0,4):
@@ -69,8 +100,9 @@ class FirmwareTest(unittest.TestCase):
             self.assertEqual(self.row(layer,7)[1], 0x0333)  # Ctrl+Shift+semicolon
 
     def test_settings_and_profile_selection(self):
-        for layer in (3,7):
+        for layer in (3,7,11):
             self.assertEqual(self.row(layer,3)[4:], (0x7e40,0x7e41))
+            self.assertEqual(self.row(layer,7)[5], 0x7e42)
             self.assertEqual(self.row(layer,5)[0], 0x80)  # Keyboard Volume up
             self.assertEqual(self.row(layer,4)[0:2], (0x81,0x7f))  # Keyboard Volume down, Mute
             self.assertEqual(self.row(layer,3)[1:3], (0x7e00,0x7e00))  # PDF's two Keyball reset keys
@@ -88,7 +120,7 @@ class FirmwareTest(unittest.TestCase):
         layers = json.loads(backup.read_text())['layers']
         # Missing switches under the ball and new profile selectors have no old key to reproduce.
         unused = {18,42,44,45}
-        changed = {(0,19): 0, (2,46): 0xe5, (3,22): 0x7e40, (3,23): 0x7e41}
+        changed = {(0,19): 0, (2,46): 0xe5, (3,22): 0x7e40, (3,23): 0x7e41, (3,47): 0x7e42}
         for layer in range(4):
             for pos,old in enumerate(layers[layer]):
                 if pos in unused: continue
@@ -103,7 +135,7 @@ class FirmwareTest(unittest.TestCase):
             (0,20): 0x477f, (0,21): 0x52c5,  # local layers 3/1 become 7/5
             (2,46): 0xe3,  # 0x10e3 has a right-side marker with no mods; it sends Left GUI
             (3,7): 0x2144,  # user prefers PDF's Ctrl/F11 over the live plain F11
-            (3,22): 0x7e40, (3,23): 0x7e41,
+            (3,22): 0x7e40, (3,23): 0x7e41, (3,47): 0x7e42,
         }
         for layer in range(4):
             for pos,old in enumerate(layers[layer]):
