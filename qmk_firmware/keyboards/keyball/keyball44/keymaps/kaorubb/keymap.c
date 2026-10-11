@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include QMK_KEYBOARD_H
 #include "keymap_japanese.h"
+#include "profile-selection.h"
 
 enum layers {
-    LINUX_BASE,
+    LINUX_BASE = PROFILE_LINUX,
     LINUX_NUM,
     LINUX_SHORTCUT,
     LINUX_SETTINGS,
-    MAC_BASE,
+    MAC_BASE = PROFILE_MAC,
     MAC_NUM,
     MAC_SHORTCUT,
     MAC_SETTINGS,
-    WIN_BASE,
+    WIN_BASE = PROFILE_WINDOWS,
     WIN_NUM,
     WIN_SHORTCUT,
     WIN_SETTINGS,
@@ -19,9 +20,7 @@ enum layers {
 };
 
 enum custom_keycodes {
-    PROFILE_LINUX = KEYBALL_SAFE_RANGE,
-    PROFILE_MAC,
-    PROFILE_WINDOWS,
+    PROFILE_CYCLE = KEYBALL_SAFE_RANGE,
 };
 
 // PDF labels above a key are chords; labels below it are hold actions.
@@ -52,7 +51,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         UG_TOGG,        KC_F1,          KC_F2,          KC_F3,      KC_F4,      KC_F5,      KC_F6,          KC_F7,      KC_F12,     KC_F9,          KC_KB_MUTE,         KC_KB_VOLUME_DOWN,
         KC_LCTL,        LCTL_T(KC_F11), KC_F12,         KC_F13,     KC_F14,     KC_F15,     KC_LEFT,        KC_DOWN,    KC_UP,      KC_RGHT,        KC_TRNS,            KC_KB_VOLUME_UP,
         UG_PREV,        RGB_M_P,        RGB_M_B,        UG_SPDU,    UG_SPDD,    RGB_M_R,    RGB_M_TW,       RGB_M_T,    RGB_M_X,    DB_TOGG,        KC_F20,             KBC_SAVE,
-        KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_LINUX, PROFILE_MAC,                  PROFILE_WINDOWS, KC_TRNS, HYPR(KC_K)
+        KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_CYCLE, KC_TRNS,                     KC_TRNS, KC_TRNS, HYPR(KC_K)
     ),
 
     [MAC_BASE] = LAYOUT_right_ball(
@@ -80,7 +79,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         UG_TOGG,        KC_F1,          KC_F2,          KC_F3,      KC_F4,      KC_F5,      KC_F6,          KC_F7,      KC_F8,      KC_F9,          KC_KB_MUTE,         KC_KB_VOLUME_DOWN,
         KC_LCTL,        LCTL_T(KC_F11), KC_F12,         KC_F13,     KC_F14,     KC_F15,     KC_LEFT,        KC_DOWN,    KC_UP,      KC_RGHT,        KC_TRNS,            KC_KB_VOLUME_UP,
         UG_PREV,        RGB_M_P,        RGB_M_B,        UG_SPDU,    UG_SPDD,    RGB_M_R,    RGB_M_TW,       RGB_M_T,    RGB_M_X,    DB_TOGG,        KC_F20,             KBC_SAVE,
-        KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_LINUX, PROFILE_MAC,                  PROFILE_WINDOWS, KC_TRNS, HYPR(KC_K)
+        KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_CYCLE, KC_TRNS,                     KC_TRNS, KC_TRNS, HYPR(KC_K)
     ),
     [WIN_BASE] = LAYOUT_right_ball(
         KC_TAB,         KC_Q,           KC_W,           KC_E,       KC_R,       KC_T,       KC_Y,       KC_U,       KC_I,       KC_O,           KC_P,               KC_EQL,
@@ -107,7 +106,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         UG_TOGG,        KC_F1,          KC_F2,          KC_F3,      KC_F4,      KC_F5,      KC_F6,          KC_F7,      KC_F12,     KC_F9,          KC_KB_MUTE,         KC_KB_VOLUME_DOWN,
         KC_LCTL,        LCTL_T(KC_F11), KC_F12,         KC_F13,     KC_F14,     KC_F15,     KC_LEFT,        KC_DOWN,    KC_UP,      KC_RGHT,        KC_TRNS,            KC_KB_VOLUME_UP,
         UG_PREV,        RGB_M_P,        RGB_M_B,        UG_SPDU,    UG_SPDD,    RGB_M_R,    RGB_M_TW,       RGB_M_T,    RGB_M_X,    DB_TOGG,        KC_F20,             KBC_SAVE,
-        KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_LINUX, PROFILE_MAC,                  PROFILE_WINDOWS, KC_TRNS, HYPR(KC_K)
+        KBC_RST, KBC_RST, LCTL(LGUI(KC_Q)), PROFILE_CYCLE, KC_TRNS,                     KC_TRNS, KC_TRNS, HYPR(KC_K)
     ),
 
     [MOUSE] = LAYOUT_right_ball(
@@ -171,24 +170,81 @@ const key_override_t *key_overrides[] = {
 };
 
 static uint8_t scroll_keys;
+static bool settings_held;
+static profile_selection_t profile_selection;
+static uint16_t last_key_activity;
+static volatile bool reconnect_pending;
+static usb_configure_state_t previous_usb_state = USB_DEVICE_STATE_NO_INIT;
 
 static void select_profile(uint8_t base) {
     key_override_off();
     windows_profile = base == WIN_BASE;
     key_override_on();
     scroll_keys = 0;
-    set_auto_mouse_enable(false);
     layer_clear();
     default_layer_set((layer_state_t)1 << base);
-    set_auto_mouse_enable(true);
-    keyball_set_scroll_mode(false);
+    if (settings_held) layer_on(base + 3);
 }
 
 void keyboard_post_init_user(void) {
-    select_profile(LINUX_BASE);
+    profile_selection_init(&profile_selection);
+    last_key_activity = timer_read();
+    select_profile(profile_selection.current);
+}
+
+void notify_usb_device_state_change_user(struct usb_device_state state) {
+    if (state.configure_state == USB_DEVICE_STATE_INIT &&
+        previous_usb_state > USB_DEVICE_STATE_INIT) {
+        // Reset the USB fingerprint before descriptors for the new connection arrive.
+        erase_wlength_data();
+        reconnect_pending = true;
+    }
+    previous_usb_state = state.configure_state;
+}
+
+static void update_connection(void) {
+    if (reconnect_pending) {
+        reconnect_pending = false;
+        profile_selection_reconnect(&profile_selection);
+    }
+}
+
+bool process_detected_host_os_user(os_variant_t os) {
+    update_connection();
+    uint8_t profile = PROFILE_UNKNOWN;
+    switch (os) {
+        case OS_LINUX: profile = LINUX_BASE; break;
+        case OS_MACOS: profile = MAC_BASE; break;
+        case OS_WINDOWS: profile = WIN_BASE; break;
+        default: break;
+    }
+    profile_selection_detect(&profile_selection, profile);
+    return true;
+}
+
+void housekeeping_task_user(void) {
+    if (!is_keyboard_master()) return;
+    update_connection();
+    for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
+        if (matrix_get_row(row)) {
+            last_key_activity = timer_read();
+            return;
+        }
+    }
+    // Let queued tap/hold events finish before automatically changing their keymap.
+    bool input_busy = timer_elapsed(last_key_activity) < TAPPING_TERM;
+    if (profile_selection_apply(&profile_selection, input_busy)) select_profile(profile_selection.current);
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    // Keep the same physical Mute held while the profile's settings layer changes.
+    if (IS_QK_LAYER_TAP(keycode) && QK_LAYER_TAP_GET_TAP_KEYCODE(keycode) == KC_KB_MUTE && !record->tap.count) {
+        settings_held = record->event.pressed;
+        uint8_t layer = get_highest_layer(default_layer_state) + 3;
+        if (settings_held) layer_on(layer);
+        else layer_off(layer);
+        return false;
+    }
     // QMK overrides see raw Mod-Tap codes; translate their tap events explicitly.
     if (windows_profile && IS_QK_MOD_TAP(keycode) && record->tap.count) {
         uint8_t tap_key = QK_MOD_TAP_GET_TAP_KEYCODE(keycode);
@@ -207,14 +263,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             keyball_set_scroll_mode(scroll_keys || layer_state_cmp(layer_state, get_highest_layer(default_layer_state) + 3));
             return false;
         }
-        case PROFILE_LINUX:
-            if (record->event.pressed && get_highest_layer(default_layer_state) != LINUX_BASE) select_profile(LINUX_BASE);
-            return false;
-        case PROFILE_WINDOWS:
-            if (record->event.pressed && get_highest_layer(default_layer_state) != WIN_BASE) select_profile(WIN_BASE);
-            return false;
-        case PROFILE_MAC:
-            if (record->event.pressed && get_highest_layer(default_layer_state) != MAC_BASE) select_profile(MAC_BASE);
+        case PROFILE_CYCLE:
+            if (record->event.pressed) {
+                update_connection();
+                profile_selection_cycle(&profile_selection);
+                select_profile(profile_selection.current);
+            }
             return false;
     }
     return true;
@@ -238,7 +292,6 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 void oledkit_render_info_user(void) {
     uint8_t base = get_highest_layer(default_layer_state);
     oled_set_cursor(0, 0);
-    // Four OLED rows: profile, ball motion, ball settings, layer/auto-mouse status.
     oled_write_P(base == WIN_BASE ? PSTR("Win JIS  ") : base == MAC_BASE ? PSTR("Mac US   ") : PSTR("Linux US "), false);
     if (layer_state_cmp(layer_state, MOUSE)) {
         oled_write_P(PSTR("Mouse       "), false);
@@ -247,7 +300,12 @@ void oledkit_render_info_user(void) {
         oled_write_char('0' + get_highest_layer(layer_state | default_layer_state) - base, false);
         oled_write_P(PSTR("          "), false);
     }
+    oled_set_cursor(0, 1);
+    oled_write_P(PSTR("Key R"), false);
+    oled_write_char('0' + keyball.last_pos.row, false);
+    oled_write_P(PSTR(" C"), false);
+    oled_write_char('0' + keyball.last_pos.col, false);
+    oled_set_cursor(0, 2);
     keyball_oled_render_ballinfo();
-    keyball_oled_render_layerinfo();
 }
 #endif

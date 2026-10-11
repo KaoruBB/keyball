@@ -1,6 +1,15 @@
 """Check the built AVR keymap and Windows JIS translations."""
-import json, re, struct, subprocess, unittest
+import json, re, struct, subprocess, tempfile, unittest
 from pathlib import Path
+
+
+class ProfileSelectionTest(unittest.TestCase):
+    def test_profile_selection_transitions(self):
+        source = Path(__file__).with_name('test_profile_selection.c')
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = str(Path(tmp)/'profile-selection-test')
+            subprocess.run(['cc', '-std=c11', '-Wall', '-Wextra', '-Werror', str(source), '-o', binary], check=True)
+            subprocess.run([binary], check=True)
 
 
 class FirmwareTest(unittest.TestCase):
@@ -101,8 +110,8 @@ class FirmwareTest(unittest.TestCase):
 
     def test_settings_and_profile_selection(self):
         for layer in (3,7,11):
-            self.assertEqual(self.row(layer,3)[4:], (0x7e40,0x7e41))
-            self.assertEqual(self.row(layer,7)[5], 0x7e42)
+            self.assertEqual(self.row(layer,3)[4:], (0x7e40,1))
+            self.assertEqual(self.row(layer,7)[5], 1)
             self.assertEqual(self.row(layer,5)[0], 0x80)  # Keyboard Volume up
             self.assertEqual(self.row(layer,4)[0:2], (0x81,0x7f))  # Keyboard Volume down, Mute
             self.assertEqual(self.row(layer,3)[1:3], (0x7e00,0x7e00))  # PDF's two Keyball reset keys
@@ -120,7 +129,7 @@ class FirmwareTest(unittest.TestCase):
         layers = json.loads(backup.read_text())['layers']
         # Missing switches under the ball and new profile selectors have no old key to reproduce.
         unused = {18,42,44,45}
-        changed = {(0,19): 0, (2,46): 0xe5, (3,22): 0x7e40, (3,23): 0x7e41, (3,47): 0x7e42}
+        changed = {(0,19): 0, (2,46): 0xe5, (3,22): 0x7e40, (3,23): 1, (3,47): 1}
         for layer in range(4):
             for pos,old in enumerate(layers[layer]):
                 if pos in unused: continue
@@ -135,7 +144,7 @@ class FirmwareTest(unittest.TestCase):
             (0,20): 0x477f, (0,21): 0x52c5,  # local layers 3/1 become 7/5
             (2,46): 0xe3,  # 0x10e3 has a right-side marker with no mods; it sends Left GUI
             (3,7): 0x2144,  # user prefers PDF's Ctrl/F11 over the live plain F11
-            (3,22): 0x7e40, (3,23): 0x7e41, (3,47): 0x7e42,
+            (3,22): 0x7e40, (3,23): 1, (3,47): 1,
         }
         for layer in range(4):
             for pos,old in enumerate(layers[layer]):
