@@ -154,7 +154,7 @@ LED数60は変更していない。Keyball39にも既に同じ更新が入って
 ## Step 3：Linux・Mac配列のコード化
 
 個人キーマップとPDFからの変更点は
-[kaorubbキーマップのREADME](../../qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/README.md)を参照。
+[kaorubbキーマップのREADME](../../qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/README.org)を参照。
 
 - Linuxは0〜3、Macは4〜7の4レイヤーずつ。Layer 2への入口は追加しない。
 - VIA無効、レイヤー状態16bit、起動時Linux、OS選択は手動で保存しない。
@@ -338,7 +338,7 @@ HEXのSHA256：`ae7cd08903ae1957189da5a32a207bb2f09cbb0d03d4e5d373e0aeb6dbe4c78f
 - 設定レイヤーの優先とMac実機での新しいマウス配置は、個別の確認結果をまだ取得していない。
   Step 4のMac基本入力・従来マウス操作は確認済み。
 - 実機確認済みHEXを`recovery/keyball44-kaorubb-step5.hex`へ保管。
-- 別個体の導入・書き込み手順をリポジトリ直下のREADMEへ追加。
+- 別個体の導入・書き込み手順は個人キーマップのREADME.orgへ集約。
   利用者の指定によりバックアップは任意とし、書き込み時のバックアップ必須チェックを削除した。
   任意の保存手順と既存バックアップは維持する。
 - Windows JIS（Step 6）は未着手。
