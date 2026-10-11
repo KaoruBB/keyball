@@ -84,8 +84,6 @@ def main():
         if args.backup is None: parser.error('restore requires --backup')
         app, eeprom = restoration_files(args.backup.resolve(), args.side)
     if args.operation == 'flash':
-        backups = list(recovery.glob(f'{args.side}-avr-backup-*/manifest.json'))
-        if not backups: raise RuntimeError(f'Complete a {args.side} backup before flashing')
         subprocess.run([sys.executable, str(repo/'qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/verify_firmware.py')], check=True)
         print(f'Firmware SHA256: {hashlib.sha256(firmware.read_bytes()).hexdigest()}', flush=True)
     # Authenticate before the 8-second Caterina window starts. Never enter a password in chat.
