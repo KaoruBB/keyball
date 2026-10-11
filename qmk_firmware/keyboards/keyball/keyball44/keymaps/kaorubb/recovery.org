@@ -1,0 +1,47 @@
+#+title: kaorubb バックアップと復旧（任意・Linux専用）
+
+通常の導入は[[README.org][README]]の手順で進める。元のRemap配列も残したい場合だけ、この手順を使う。
+以下はLinux専用。direnv環境を読み込み、リポジトリのルートで実行する。
+
+* 書き込み前に保存する
+
+USBを右側へ接続する。次のコマンドは元のFlashとEEPROMを読み取り、復旧ファイルを生成する：
+
+#+begin_src sh
+python3 bin/keyball44-avr.py backup right --sudo
+#+end_src
+
+sudo認証後、=Press the physical reset button twice now=が出たら右側のリセットを素早く2回押す。
+=Backup completed=と保存先を確認する。
+USBを外して左側へ挿し直し、左側も保存する：
+
+#+begin_src sh
+python3 bin/keyball44-avr.py backup left --sudo
+#+end_src
+
+左側のリセットを2回押し、保存完了を確認する。
+保存先は=keyball44/doc/recovery/<side>-avr-backup-<UTC日時>/=。
+個体名と左右それぞれの保存先を記録し、別の場所にもコピーする。
+
+リポジトリに同梱されたバックアップは最初の個体のもの。他の個体の復旧には使わない。
+
+* 保存した元配列へ戻す
+
+その個体から取得したバックアップを使う。以下の山括弧部分は実際の保存先に置き換える。
+USBを左側へ接続し、元のファームウェアとEEPROMをセットで復元する：
+
+#+begin_src sh
+python3 bin/keyball44-avr.py restore left --sudo --backup <今回の左側バックアップディレクトリ>
+#+end_src
+
+リセット待ちの表示後に左側のリセットを2回押し、復元・検証の完了を確認する。
+USBを外して右側へ挿し直し、右側も復元する：
+
+#+begin_src sh
+python3 bin/keyball44-avr.py restore right --sudo --backup <今回の右側バックアップディレクトリ>
+#+end_src
+
+右側のリセットを2回押し、復元・検証の完了を確認する。
+復旧は=application.hex=と=eeprom.bin=を使う。
+ブートローダーを含む=flash.bin=を直接書き込まない。
+この復旧コマンドの実機実行は未検証。

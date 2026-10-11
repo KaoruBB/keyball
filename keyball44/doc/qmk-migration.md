@@ -402,9 +402,12 @@ RAMの静的使用量はdata 570 + bss 1,118 = 1,688 / 2,560 bytes。スタッ�
 Linuxで`direnv exec . bash bin/build-keyball44.sh kaorubb`が成功。
 MacではLinux専用の`bin/keyball44-avr.py`を使わず、QMK標準の`:avrdude`ターゲットを使う。
 Mac実機と別のKeyball44でのビルド・書き込み・動作確認は利用者が今後実施する。
-詳細と記録項目は個人キーマップのREADME.orgに集約した。
+導入・操作手順は個人キーマップのREADME.org、設計と検証記録はdevelopment-notes.orgに集約した。
 
 - direnv環境で11件の配列表テストが成功。最終HEXは27,714 bytes、残り958 bytes。
 - Apple Silicon MacのdevShellはLinuxホストから評価成功。Mac上のビルド・USB書き込みは未検証。
 - Intel MacのdevShellは、固定NixpkgsのQMKに含まれる`gcc-arm-embedded-15.2.rel1`が
   `x86_64-darwin`非対応のため評価失敗。Intelで試す場合は依存構成の調整が必要。
+
+ユーザー向けREADMEから作業記録を分離し、個人キーマップのdevelopment-notes.orgへ移した。
+任意のバックアップ・復旧操作はrecovery.orgへ分離した。

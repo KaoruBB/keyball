@@ -1,130 +1,15 @@
-* kaorubb: Linux US / Mac US / Windows JIS
-:PROPERTIES:
-:CUSTOM_ID: kaorubb-linux-us-mac-us-windows-jis
-:END:
-Keyball44の右ボール用、VIA無効の個人キーマップ。
-Step 6のWindows JIS実装はビルド検証済み。Windows実機では未検証。
-QMK 0.29.0の左右判定は=SPLIT_HAND_MATRIX_GRID_LOW_IS_LEFT=で基板の極性に合わせる。
-配列の正本は=keymap.c=。Linuxの4レイヤーを0〜3、Macを4〜7へ配置する。
-Windows JISは8〜11、共通の専用マウスレイヤーは12。
-この個人キーマップの操作・移行・検証手順は本ファイルで管理する。
+#+title: Keyball44 kaorubb ユーザーガイド
 
-元の配列：
-[[../../../../../../keyball44/doc/recovery/keymap_cheatsheet_keyball44.pdf][Linux PDF]]、 [[../../../../../../keyball44/doc/recovery/keymap_cheatsheet_keyball44_mac.pdf][Mac PDF]]。
+右ボールのKeyball44へ、このリポジトリのLinux US・Mac US・Windows JIS配列を導入する手順。
+作業用PCはLinuxまたはApple Silicon Mac、キーボードはPro Micro / ATmega32U4とCaterinaが対象。
+以下のコマンドはすべて、cloneしたリポジトリのルートで実行する。
 
-** 操作
-:PROPERTIES:
-:CUSTOM_ID: 操作
-:END:
-- 起動時はLinux US。OS選択はEEPROMに保存しない。
-- 左親指のMuteをホールドすると、各プロファイルのLayer 3に入る。
-  Muteはタップで送信する（=LT(..., KC_KB_MUTE)=）。
-- Layer 3で左Space位置を押すとLinux、左Backspace位置を押すとMac、右Shift位置でWindows。
-  別OSへの切替時は一時レイヤーを解除する。同じOSを再選択した場合は状態を維持する。
-  保持していたキーは離してから入力を再開する。
-- 左Spaceのすぐ左のキーは、Linux/Macでは=TT(1)=（Macは内部Layer 5）。
-  ホールド中は有効、5回タップで固定オン・オフ。
-  Windowsでは=LT(WIN_NUM, KC_LNG2)=：タップでIMEオフ、ホールドで内部Layer 9。
-  Windowsのこのキーには5回タップによる固定切替を付けない。
-- タップ／ホールド判定は標準の200ms。個別のタイミング調整はまだ行わない。
-- Layer 2のショートカット配列はコードに保存するが、切替キーは追加しない。
-- ボールを動かすと共通の自動マウスレイヤーへ入る。M＝左クリック、カンマ＝右クリック、
-  ピリオドを押している間＝スクロール。それ以外のキーは下の配列を使う。
-  OLEDにOS名と=Mouse=を表示する。
-  起動時・OS切替後に自動マウスを有効にし、タイムアウトは既存のKeyball設定に従う。
-  数字・設定レイヤーの使用中は自動マウスを停止し、戻ると再開する。
-  クリックやピリオドを保持している間は、ボールを止めてもマウスレイヤーを維持する。
-- Layer 3を保持している間のスクロールと、Layer 1のZ位置の=SCRL_MO=を維持する。
-  左Zと右ピリオドを同時に保持した場合は、最後のスクロールキーを離すまでスクロールを続ける。
+* 初めて導入する
 
-** PDFとの対応・変更点
-:PROPERTIES:
-:CUSTOM_ID: pdfとの対応変更点
-:END:
-RemapのPDFでは、キー上部の修飾表示は同時入力、下部はホールド動作。
-=*=の左右位置は左／右修飾キーを示す。
-たとえばLayer 1のH位置はShift+左クリックという同時入力であり、Mod-Tapではない。
-Layer 2のCtrl+数字も同時入力として保存する。
+** 1. リポジトリと開発環境を用意する
 
-| 項目                             | 実装                                                                                                                 |
-|----------------------------------+----------------------------------------------------------------------------------------------------------------------|
-| LINUX の S/L ホールド           | 左／右 GUI （ Super ）                                                                                              |
-| MAC の S/L ホールド             | 左／右 Alt                                                                                                           |
-| LINUX の SPACE                   | タップ SPACE 、ホールド左 Alt                                                                                       |
-| MAC の Space                     | 通常の Space                                                                                                         |
-| MAC の左下の F3                 | タップ F3 、ホールド左 Ctrl                                                                                         |
-| MAC LAYER 1 の D/F               | タップ 8/9 、ホールド左 Shift/GUI                                                                                   |
-| LINUX LAYER 1 の N/M/カンマ位置 | GUI+X / Page Down / Page Up                                                                                          |
-| MAC LAYER 1 の N/M/カンマ位置   | N / M / カンマ                                                                                                       |
-| LAYER 3 の I 位置                | Linux は F12 、 Mac は F8 （ PDF の違いをそのまま保存）                                                            |
-| Linux Layer 0 左下の透明キー    | 下位レイヤーがないので=KC_NO=（入力なし）                                                                          |
-| LAYER 3 の Space/Backspace 位置  | PDF の透明キーから Linux/Mac 選択キーへ変更                                                                        |
-| MUTE と音量                      | 実機の VIA 読み取り結果に合わせて Keyboard Mute / Volume を使用。 Consumer キー用の=EXTRAKEY=は無効              |
-| LAYER 2 の JIS Hiragana          | 実機で=KC_LNG4=と確認。 International 2 ではなく Language 4 を使用                                                 |
-| MAC LAYER 3 の Q 位置            | 実機の通常 F11 から、利用者の選択で PDF の Ctrl/F11 へ変更                                                        |
-| OLED                             | キー位置の表示行を OS 名とプロファイル内のレイヤー番号へ変更。ボール・ CPI ・スクロール・自動マウス表示は維持 |
-| LED                              | Step 6 で容量を確保するため、利用者の選択により単色点灯のみを維持                                                |
-
-LEDはPlainとオン／オフを維持する。アニメーションを選ぶ既存キーは配列に残るが、
-対応するエフェクトは無効。Step 5までのアニメーションはStep 6では利用できない。
-PDFのDebug Toggleキーは保存するが、Consoleは無効なのでデバッグ出力はない。
-
-PDFからは現行ファームウェアのタップ判定時間、TTのタップ回数、CPI、スクロール設定、
-自動マウス設定は分からない。上記の標準値と実機の現在の動作との違いは、書き込み前後に確認する。
-
-** ビルドと検証
-:PROPERTIES:
-:CUSTOM_ID: ビルドと検証
-:END:
-direnvで開発環境を読み込んだ後、リポジトリ直下で実行する：
-
-#+begin_src sh
-bash bin/build-keyball44.sh kaorubb
-python3 qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/verify_firmware.py -v
-#+end_src
-
-検証スクリプトは生成されたHEXとELFを読み、容量、16bitレイヤー状態、
-右ボールの配線に対応した配列表、主要なキーとLinux/Mac差分を確認する。
-ホールドの判定、OS切替時のキー解放、自動マウス、OLED、実際の入力はStep 4の実機検証対象。
-
-OS切替の実機確認では、通常の切替に加え、TTを保持したまま別OSへ切り替えてから
-TTとMuteを離す操作、および同じOSを再選択する操作を試す。
-旧プロファイルのレイヤーが復活しないこと、修飾キーやマウスボタンが保持されないことを確認する。
-
-生成物：=tmp/qmk-0.29.0/keyball_keyball44_kaorubb.hex=。
-サイズ検査に失敗したビルドでもhexが残るため、必ずビルドコマンドが成功した生成物を使う。
-Step 4での実機確認済みHEXは=keyball44/doc/recovery/keyball44-kaorubb-step4.hex=。
-Step 5では両側への書き込み後、M/カンマのクリック、ドラッグ中の停止、ピリオドの解放、
-数字・設定レイヤーの優先、OS切替後のキー解放を実機で確認する。
-
-* 別のKeyball44をQMKへ移行する（Linux / Mac + Nix）
-:PROPERTIES:
-:CUSTOM_ID: 別のkeyball44をqmkへ移行するlinux-nix
-:END:
-この手順は、*右ボール・Pro Micro / ATmega32U4・Caterinaブートローダー*の
-Keyball44へ、このリポジトリの=kaorubb=配列を導入するためのもの。
-他の個体のRemap配列を自動的にソースへ変換する手順ではない。
-左ボールや別のマイコンを使う個体は、配線・レイアウト・書き込み方法を別途確認する。
-LinuxまたはMacで作業する。Nix（flakes有効）、Git、direnv、nix-direnvとシェル連携を用意する。
-以下のコマンドは、すべてcloneしたリポジトリのルートで実行する。
-Macの手順はApple Silicon向け。利用者が別PCでclone・ビルド・書き込みを実機確認する予定。
-Intel Macについては末尾の制限を参照する。
-
-** 1. 任意：今の配列・設定を保存する
-:PROPERTIES:
-:CUSTOM_ID: 今の配列設定を保存する
-:END:
-Remapで左右それぞれの配列を確認し、PDFや取得できる配列データを保存する。
-CPI、スクロール速度・方向、OLED・LED、自動マウスの設定も記録する。
-左右で別の配列を使っている場合は、USBをそれぞれに接続して確認する。
-PDFだけではタップ／ホールドの設定やEEPROMを完全には復元できないため、
-元へ戻せるようにしたい場合は下記の実機バックアップも行う。移行時のバックアップは任意。
-
-** 2. ソースを取得してビルドする
-:PROPERTIES:
-:CUSTOM_ID: ソースを取得してビルドする
-:END:
-初めて取得する場合（既にこのブランチを取得済みなら、そのリポジトリで作業する）：
+PCにGit、Nix（flakes有効）、direnv、nix-direnvを用意し、direnvのシェル連携を有効にする。
+ソースを取得し、direnvにこの開発環境の読み込みを許可する：
 
 #+begin_src sh
 git clone --branch kaoru/qmk_migration https://github.com/KaoruBB/keyball.git
@@ -132,234 +17,147 @@ cd keyball
 direnv allow
 #+end_src
 
-=.envrc=の=use flake .=で開発環境を読み込む。初回は依存を取得するため時間がかかる。
-シェル連携を使わない場合も、=direnv exec . bash bin/build-keyball44.sh kaorubb=で実行できる。
-環境に必要なツールがあることを確認する：
+既にclone済みなら、そのリポジトリで続きを行う。
+初回は依存のダウンロードが終わり、シェルのプロンプトが戻るまで待つ。
 
-#+begin_src sh
-command -v qmk avr-gcc avr-nm avr-objdump avrdude make python3
-#+end_src
+** 2. キーマップからファームウェアを生成する（ビルド）
 
-リポジトリ直下から実行する：
+次のコマンドは、=keymap.c=の配列をキーボードに書き込めるHEXファイルへ変換する。
+初回は固定版のQMK本体（0.29.0）も自動取得する：
 
 #+begin_src sh
 bash bin/build-keyball44.sh kaorubb
+#+end_src
+
+成功すると、末尾に=Firmware:=と生成先を表示する。
+生成先は=tmp/qmk-0.29.0/keyball_keyball44_kaorubb.hex=。
+=The firmware is too large!=やエラーが出た場合は、書き込みへ進まずビルドの問題を解消する。
+
+direnvのシェル連携を使わない場合は、各コマンドの前に=direnv exec .=を付けて実行できる。
+例：=direnv exec . bash bin/build-keyball44.sh kaorubb=。
+
+** 3. 生成した配列を検証する
+
+次のコマンドは、生成したHEXとELFを読み、キー配置・OS別配列・Windows記号補正・容量を検査する：
+
+#+begin_src sh
 python3 qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/verify_firmware.py -v
 #+end_src
 
-初回はNixの依存とQMK本体・サブモジュールをダウンロードする。
-=flake.lock=の環境とQMK *0.29.0*を使う（元のファームウェアREADMEの0.22.14とは異なる）。
-Keyball定義のリンクもスクリプトが作成するので、=qmk setup=は不要。
-ビルドと配列表テストが成功したことを確認する。生成物は
-=tmp/qmk-0.29.0/keyball_keyball44_kaorubb.hex=。
-容量検査が失敗したビルドのHEXは使用しない。
+末尾に=OK=と表示されれば成功。失敗した場合は原因を確認してから書き込む。
 
-** 3. 任意：移行対象の左右をバックアップする（Linux専用）
-:PROPERTIES:
-:CUSTOM_ID: 移行対象の左右をバックアップする
-:END:
-作業対象のKeyball44だけをUSB接続する。スクリプトはUSB ID =5957:0400=を探す。
-認識しない場合は、その個体のマイコンと現行ファームウェアを確認する。
-左右をつなぐケーブルは接続したままでよい。抜き差しする場合は先にUSBを外す。
+** 4. 左右へ同じファームウェアを書き込む
 
-まずUSBを右側へ接続し、以下を実行する：
+作業対象のKeyball44だけをUSB接続する。左右接続ケーブルは接続したままでよい。
+USBを接続している側へ書き込む。左右接続ケーブルを抜き差しする場合は、先にUSBを外す。
+PCのOSに合う手順を使う。
 
-#+begin_src sh
-python3 bin/keyball44-avr.py backup right --sudo
-#+end_src
+*** Mac
 
-sudo認証後、=Press the physical reset button twice now=と表示されたら、
-USB接続している側の物理リセットを素早く2回押す。
-=Backup completed=と保存先が表示されるまで待つ。
-次にUSBを外して左側へ挿し直し、同じ操作を行う：
-
-#+begin_src sh
-python3 bin/keyball44-avr.py backup left --sudo
-#+end_src
-
-バックアップは=keyball44/doc/recovery/<side>-avr-backup-<UTC日時>/=へ保存される。
-=flash.bin=、=eeprom.bin=、=application.hex=、=manifest.json=が生成される。
-*今回の個体名と左右それぞれの保存先をメモし、別の場所にもコピーする。*
-リポジトリに同梱されたバックアップは最初の個体のものであり、別個体の復旧には使わない。
-書き込みはバックアップなしでも実行できる。保存する場合はその個体の両側から新しく取得する。
-
-** 4. 同じHEXを両側へ書き込む
-:PROPERTIES:
-:CUSTOM_ID: 同じhexを両側へ書き込む
-:END:
-=bin/keyball44-avr.py=はLinuxの=/sys=を使うためMacでは実行しない。
-OSごとに以下のどちらかの手順を使う。バックアップは任意。
-
-*** Linuxの場合
-作業対象のKeyball44だけをUSB接続する。スクリプトはUSB ID =5957:0400=を探す。
-認識しない場合は、その個体のマイコンと現行ファームウェアを確認する。
-左右をつなぐケーブルは接続したままでよい。抜き差しする場合は先にUSBを外す。
-USBを左側へ接続して実行する（バックアップは任意）：
-
-#+begin_src sh
-python3 bin/keyball44-avr.py flash left --sudo
-#+end_src
-
-sudo認証後、表示されたSHA256を記録する。
-=Press the physical reset button twice now=と表示されたら左リセットを素早く2回押す。
-=left flash write and verification completed.=を確認する。
-USBを外して右側へ挿し直し、右側も実行する：
-
-#+begin_src sh
-python3 bin/keyball44-avr.py flash right --sudo
-#+end_src
-
-同じSHA256であることを確認し、リセット待ちの表示後に右リセットを2回押す。
-=right flash write and verification completed.=を確認する。
-途中でソースやHEXを変えた場合は、両側を同じビルドへ揃える。
-
-*** Macの場合
-
-手順2のビルドと配列表テストが成功した後、書き込む側にだけUSBを接続する。
-左右接続ケーブルはそのままでよい。他のシリアル機器の接続操作は作業中に行わない。
-QMK 0.29.0標準のCaterina用書き込みターゲットを使う：
+まずUSBを左側へ接続する。次のコマンドはリセット後に現れるポートを待ち、HEXを書き込んで読み戻し検証する：
 
 #+begin_src sh
 make -C tmp/qmk-0.29.0 SKIP_GIT=yes keyball/keyball44:kaorubb:avrdude
 #+end_src
 
-=Waiting for USB serial port - reset your controller now=と表示されたら、
-USB接続側の物理リセットを素早く2回押す。
-新しく現れるシリアルポートをQMKが検出し、avrdudeで書き込みと検証を行う。
+=Waiting for USB serial port - reset your controller now=が出たら、左側の物理リセットを素早く2回押す。
 =bytes of flash verified=とavrdudeの成功終了を確認する。
+USBを外して右側へ挿し直し、同じコマンド・右側のリセット操作を繰り返す。
 
-USBを外して反対側へ挿し直し、同じコマンドとリセット操作を繰り返す。
-左右に同じHEXを使う。Macでは通常sudoは不要。
-この手順のMac実機での確認はまだ行っていない。
-参考：[[https://docs.qmk.fm/flashing#caterina][QMKのCaterina書き込み手順]]。
+*** Linux
 
-** 5. 入力とマウスを確認する
-:PROPERTIES:
-:CUSTOM_ID: 入力とマウスを確認する
-:END:
-- 起動時はLinux US。Muteを保持し、左Backspace位置でMac、左Space位置でLinux、右Shift位置でWindowsを選ぶ。
-  選択はEEPROMへ保存しない。USBを接続する側でOSを使い分ける必要はない。
-- 左右の全キー、記号、修飾キーのタップ／ホールド、TTの数字レイヤー、OLED・LEDを確認する。
-- ボール移動でマウスレイヤーへ入り、*M＝左クリック、カンマ＝右クリック、
-  ピリオド保持＝スクロール*。Mを保持したドラッグ中に1秒以上止めても保持され、
-  キーを離すとクリックやスクロールが解除されることを確認する。
-- 数字・設定レイヤー中は自動マウスが優先されないこと、マウス操作後に
-  M・カンマ・ピリオドが通常入力へ戻ること、OS切替後にキーが保持されないことを確認する。
-- 接続先のLinux/Mac/Windows実機で確認する。WindowsはOS側をJIS（106/109キー）に設定する。
-  Windows実機の検証は帰宅後に実施予定。下記のWindows JIS節を参照する。
-
-元のQMK版が異なる場合、初回起動でEEPROM設定が再初期化されることがある。
-CPIやスクロール、LEDを好みに合わせて調整する。
-LEDのオン／オフはMute保持中のTab位置で切り替える。
-設定・配列の詳細は[[#windows-jisstep-6][Windows JISの設定手順]]、
-移行時の実測値と復旧情報は[[../../../../../../keyball44/doc/qmk-migration.md][移行記録]]を参照する。
-
-** 6. 任意：復旧する場合と、今後の編集（復旧スクリプトはLinux専用）
-:PROPERTIES:
-:CUSTOM_ID: 復旧する場合と今後の編集
-:END:
-以下の復旧コマンドはLinux専用。元へ戻す場合は、手順3で*その個体から取得した*左右の保存先を指定する。
-次の=<...>=を実際のパスへ置き換え、対象側へUSB接続して実行する：
+USBを左側へ接続する。次のコマンドは配列を再検証し、sudo認証後にリセットを待って書き込む：
 
 #+begin_src sh
-python3 bin/keyball44-avr.py restore left --sudo --backup <今回の左側バックアップディレクトリ>
-python3 bin/keyball44-avr.py restore right --sudo --backup <今回の右側バックアップディレクトリ>
+python3 bin/keyball44-avr.py flash left --sudo
 #+end_src
 
-リセット操作は書き込み時と同じ。=application.hex=と=eeprom.bin=をセットで復元する。
-ブートローダーを含む=flash.bin=を直接書き込まない。
-復旧ファイルの生成・検証はテスト済みだが、復旧コマンドの実機実行は未検証。
+=Press the physical reset button twice now=が出たら、左側の物理リセットを素早く2回押す。
+=left flash write and verification completed.=を確認する。
+USBを外して右側へ挿し直し、右側を同様に書き込む：
 
-今後の配列変更は=qmk_firmware/keyboards/keyball/keyball44/keymaps/kaorubb/keymap.c=を編集し、
-ビルド・配列表テスト・両側への書き込み・実機確認を繰り返す。VIAは無効のため、Remapでの編集はできない。
-実機確認済みHEXと、そのソースのGitコミット、SHA256をセットで保管する。
-今回のStep 5で確認済みのHEXは=keyball44/doc/recovery/keyball44-kaorubb-step5.hex=。
-対応する配列ソースのコミットは=1e87e2a=。
-SHA256：=ae7cd08903ae1957189da5a32a207bb2f09cbb0d03d4e5d373e0aeb6dbe4c78f=。
+#+begin_src sh
+python3 bin/keyball44-avr.py flash right --sudo
+#+end_src
 
-* Windows JIS（Step 6）
+右側のリセットを2回押し、=right flash write and verification completed.=を確認する。
+
+** 5. 接続先のOSを選んで動作を確認する
+
+起動時はLinuxモード。下の「OS切替」で接続先を選ぶ。
+Macへ接続した場合は、入力を試す前にMacを選択する。
+
+- 左右の文字・Space・Backspace・Enter・Shift、接続先の記号とショートカットを確認する。
+- 数字レイヤー、ボールの移動方向、クリック・ドラッグ・スクロールを確認する。
+- マウス操作後にキーを離すと保持が解除され、通常入力へ戻ることを確認する。
+
+* 日常操作
+
+** OS切替
+
+左Spaceの2つ左にあるMuteを押し続け、選択キーを一度押してから両方を離す。
+
+| 選択キーの位置 | モード | OLED表示 |
+|----------------+--------+----------|
+| 左Space | Linux US | =Linux US L0= |
+| 左Backspace | Mac US | =Mac US L0= |
+| 右Shift | Windows JIS | =Win JIS L0= |
+
+接続し直すとLinuxへ戻る。選択中のOSは保存しない。
+USBを接続する側でOSを使い分ける必要はない。
+
+** 数字レイヤーとWindowsのIME
+
+タップは短く押して離す操作、ホールドは押し続ける操作。
+
+| モード | キー位置 | タップ | ホールド |
+|--------+----------+--------+----------|
+| Linux / Mac | 左Spaceのすぐ左 | 5回タップで数字レイヤーを固定／解除 | 数字レイヤー |
+| Windows | 左Spaceのすぐ左 | 英語入力（IMEオフ） | 数字レイヤー |
+| Windows | 右Alt位置 | 日本語入力（IMEオン） | 右Alt |
+
+Windowsの左キーに5回タップの固定機能はない。Enterは別のキーとして維持する。
+
+** マウスとLED
+
+ボールを動かすとマウスレイヤーへ入り、OLEDに=Mouse=と表示する。
+
+| キー | 操作 |
+|------+------|
+| M | 左クリック。押し続けてボールを動かすとドラッグ |
+| カンマ | 右クリック |
+| ピリオド | 押している間スクロール |
+
+数字・設定レイヤー中は、その配列が優先される。
+マウス操作を終えてキーを離し、少し待つと通常の文字入力へ戻る。
+数字レイヤーのZを保持するスクロールも使える。
+LEDは単色点灯。Muteを保持してTab位置を押すとオン／オフを切り替える。
+
+* Windowsで使う
 :PROPERTIES:
 :CUSTOM_ID: windows-jisstep-6
 :END:
-Windows側のハードウェアキーボードレイアウトを「日本語キーボード（106/109キー）」に設定する。
-USB接続後はLinuxモードで起動するため、Muteを保持して右Shift位置を押し、
-OLEDの=Win JIS L0=を確認する。ボール移動中は=Win JIS Mouse=。
+Windows側を「日本語キーボード（106/109キー）」に設定してから、Windowsモードを選ぶ。
+対応する標準IMEでは、上の親指キーで英語／日本語を直接選べる。
 
-Linux配列と同じ物理位置から同じ記号を入力するため、Windowsモードだけ
-[[https://docs.qmk.fm/features/key_overrides][QMK Key Overrides]]でUSの論理キーをJISキーコードへ変換する。
-ShiftなしとShiftありの両方を扱い、Ctrlなど他の修飾キーは維持する。
-Mod-Tapはタップイベントを補正し、Ctrl・GUI・Shiftのホールド動作を維持する。
-OS切替時に補正中のキーを解除する。切替後は保持していたキーを離してから入力する。
+入力欄で次を確認する：
 
-| 入力                     | 物理位置                                    | JISで送信するキー |
-|--------------------------+----------------------------------------------+--------------------|
-| =@=                        | 数字レイヤーのShift+2                       | =JP_AT=              |
-| =^ & * ( )=                | 数字レイヤーのShift+6 /7/8/ 9/0               | 各JIS記号          |
-| 等号 (=) / プラス (+)   | 通常の右上端 / Shift+同位置                 | =JP_EQL= / =JP_PLUS=   |
-| ='= / ="=                    | 通常の右端ホーム行 / Shift+同位置          | =JP_QUOT= / =JP_DQUO=  |
-| =;= / =:=                    | 通常のセミコロン位置 / Shift+同位置        | =JP_SCLN= / =JP_COLN=  |
-| =[= / ={=                    | 数字レイヤーの左角括弧位置 / Shift+同位置  | =JP_LBRC= / =JP_LCBR=  |
-| =]= / =}=                    | 数字レイヤーの右角括弧位置 / Shift+同位置  | =JP_RBRC= / =JP_RCBR=  |
-| バックスラッシュ / 縦棒 | 数字レイヤーの通常Slash位置 / Shift+同位置 | =JP_BSLS= / =JP_PIPE=  |
-| =_=                        | 通常のShift+Minus位置                       | =JP_UNDS=            |
-| Yenキー                  | 数字レイヤーの右上端 (LinuxではAlt)        | =JP_YEN=             |
+- 数字レイヤーのShift+1〜0が =!@#$%^&*()=、引用符・コロン・括弧・バックスラッシュも期待どおりになる。
+- 左右のIMEキーを繰り返しタップしてもモードが反転せず、ホールドでは数字／Altとして動く。
+- Ctrl+A/C/V/Z、Alt+Tabと、マウスの保持・解放が正常。
 
-Windowsアプリのフォント等によって、バックスラッシュが円記号に見えることがある。
-確認時は見た目だけでなく、必要なら文字コード（U+005CかU+00A5か）も確認する。
+Windows JISとIMEの動作は、現時点でWindows実機未検証。
 
-Windowsの親指キーは次のタップ／ホールド動作にする。
+* 配列を編集する
 
-| 物理位置                       | タップ               | ホールド     | QMKキーコード         |
-|---------------------------------+----------------------+---------------+------------------------|
-| 左Spaceのすぐ左（LinuxではTT） | 英語入力、IMEオフ   | 数字レイヤー | =LT(WIN_NUM, KC_LNG2)= |
-| 右親指のAlt位置                | 日本語入力、IMEオン | 右Alt         | =RALT_T(KC_LNG1)=        |
+[[keymap.c][keymap.c]]を編集し、「ビルド→検証→左右への書き込み→動作確認」を繰り返す。
+配列を変更した場合は、[[verify_firmware.py][配列表テスト]]の期待値も変更内容に合わせる。
+VIAは無効のため、Remapでは編集できない。
 
-タップはキーを短く押して離す。200msを超えるホールドではレイヤー／Altとして動作する。
-左下の空きキーとEnterはLinuxと同じ配置を維持する。
-数字レイヤーの右Alt位置は透明にし、同じタップ／ホールドを使う。
-Linux/Macの配列とSKKの操作には変更を加えない。
+* 補足
 
-Windowsの標準IMEが対応する=KC_LNG2=（ImeOff）、=KC_LNG1=（ImeOn）を直接送る。
-対応するWindowsでは追加ソフトや変換・無変換キーの再設定は不要。
-半角/全角はトグルなので、英語を選び直すキーには使わない。
-Windows 10の対応更新版以降の日本語IMEが対象。貸与PCでの対応は実機で確認する。
-参考：[[https://learn.microsoft.com/ja-jp/windows-hardware/design/component-guidelines/keyboard-japan-ime][MicrosoftのImeOn / ImeOff仕様]]。
-
-帰宅後にWindows実機で確認する（現在は未検証）：
-
-1. IMEオフの入力欄で、数字レイヤーのShift+1〜0が =!@#$%^&*()= になる。
-2. 上表の引用符、コロン、括弧、等号、プラス、バックスラッシュ、パイプ、アンダースコアを確認する。
-   左右Shiftの両方、記号の連続入力・保持によるリピート、Ctrlとの同時操作も試す。
-3. 左Spaceのすぐ左を短く押してIMEオフ、右Alt位置を短く押してIMEオンへ切り替わる。
-   同じキーを繰り返しタップしても、入力モードが反転しない。
-   左を保持すると数字入力、右を保持するとAlt+Tabができ、ホールドではIMEが切り替わらない。
-   数字レイヤー中も右キーのタップでIMEオン、ホールドで右Altが働く。
-4. Ctrl+A/C/V/Z、Alt+Tab、GUIキーを使う操作と、Mod-Tapの単独タップ・ホールドが正常。
-5. M左クリック・カンマ右クリック・ピリオド保持スクロール、ドラッグ中の停止と解放が正常。
-6. 数字・設定レイヤーが自動マウスに上書きされない。
-   数字レイヤーキー（Linux/MacはTT、WindowsはLT）を保持したまま3つのOSを切り替え、
-   離すと切替先のL0と通常入力へ戻る。
-7. Linux/Macへ戻したとき、従来の記号や修飾キーの操作に変化がない。
-
-Step 6のビルド検証済みHEXは=keyball44/doc/recovery/keyball44-kaorubb-step6.hex=（実機未検証）。
-Flashは27,714 / 28,672 bytes、RAMの静的使用量は1,688 / 2,560 bytes（スタック分を除く）。
-SHA256：=08a3cf15dfb9889b8fb3a6f33472c32509cf15cd49f503d2f798b4a11ea2a51c=。
-
-
-* 別PC・別個体での確認記録
-
-Linuxのdirenv環境でビルドと生成HEX/ELFの配列表テストを確認済み。
-Apple Silicon MacのNixシェル定義はLinuxホストから評価成功。
-Intel Macは現在の固定NixpkgsでQMK付属のARMコンパイラが非対応のため、シェル評価に失敗する。
-Intel Macで試す場合は、先に開発環境の依存構成を調整する必要がある。
-MacでのビルドとUSB書き込み、別個体での左右判定・入力・トラックボールは実機未検証。
-WindowsのIMEオン／オフと記号入力も実機未検証。
-
-Macで試すときは、以下を記録する：
-
-- =git rev-parse HEAD=で取得したコミット、MacのCPU（Apple Silicon / Intel）、OSバージョン。
-- ビルドと11件の配列表テストの結果、ファームウェア容量。
-- 左右それぞれのavrdude書き込み・読み戻し検証の結果。
-- USB接続側にかかわらず左右の入力とポインタ方向が正しいこと。
-- Mac USを選択した後のCommand/Option・US記号・トラックボール・クリック・スクロール。
-- ホールド中のOS切替後、離すと切替先のL0へ戻り、キー保持が残らないこと。
+- バックアップは任意。保存・復旧が必要なら[[recovery.org][バックアップと復旧手順]]を参照する（Linux専用）。
+- =command not found=が出る場合はdirenv環境を確認し、必要なら=direnv exec .=経由で実行する。
+- Intel Macは現在の固定Nixpkgsの依存構成に非対応。Macの導入手順はApple Siliconを対象とする。
+- ビルドで検出できない入力やマウスの動作は実機で確認する。
+- 移行経緯・設計判断・検証記録は[[development-notes.org][開発・移行記録]]にまとめている。

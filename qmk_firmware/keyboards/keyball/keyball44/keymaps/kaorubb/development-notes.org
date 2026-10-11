@@ -1,0 +1,129 @@
+#+title: kaorubb 開発・移行記録
+
+この文書は、配列の移行経緯、設計判断、検証結果の記録。
+導入と日常操作は[[README.org][ユーザー向けREADME]]、任意のバックアップと復旧は[[recovery.org][復旧手順]]を参照する。
+
+* 設計と移行の方針
+
+- Linux USの4レイヤーを0〜3、Mac USを4〜7、Windows JISを8〜11へ割り当てた。
+- 数字レイヤーとは独立した、3プロファイル共通のマウスレイヤーを12へ追加した。
+- レイヤー状態は16bit。使っていなかった各プロファイルのLayer 2は記録として残し、入口を追加しない。
+- 起動時はLinux。OS選択はEEPROMへ保存しない。
+- QMK本体は0.29.0、コミット=75a037d2f0f9c54bad8e2f68ae82134559c92f22=へ固定。
+  元のファームウェアREADMEの0.22.14とは異なり、既存workflowの版に合わせた。
+- 初回書き込みで左右のキーとポインタが反転したため、44基板の極性に合わせて
+  =SPLIT_HAND_MATRIX_GRID_LOW_IS_LEFT=を個人用設定へ追加した。
+- 数字キーを保持したままOSを切り替えても、解放時に旧プロファイルのレイヤーが復活しないよう状態を制限した。
+- 左右のスクロールキーを別々に追跡し、一方の解放で他方の保持を解除しない。
+
+* 元配列との照合
+
+元の資料は[[../../../../../../keyball44/doc/recovery/keymap_cheatsheet_keyball44.pdf][Linux PDF]]と
+[[../../../../../../keyball44/doc/recovery/keymap_cheatsheet_keyball44_mac.pdf][Mac PDF]]。
+表示名だけではMod-Tap等のキーコードを特定できないため、実機のVIA配列とも照合した。
+
+RemapのPDFでは、キー上部の修飾表示は同時入力、下部はホールド動作。
+=*=の左右位置は左／右修飾キーを示す。
+たとえばLayer 1のH位置はShift+左クリックという同時入力であり、Mod-Tapではない。
+Layer 2のCtrl+数字も同時入力として保存する。
+
+| 項目                             | 実装                                                                                                                 |
+|----------------------------------+----------------------------------------------------------------------------------------------------------------------|
+| LINUX の S/L ホールド           | 左／右 GUI （ Super ）                                                                                              |
+| MAC の S/L ホールド             | 左／右 Alt                                                                                                           |
+| LINUX の SPACE                   | タップ SPACE 、ホールド左 Alt                                                                                       |
+| MAC の Space                     | 通常の Space                                                                                                         |
+| MAC の左下の F3                 | タップ F3 、ホールド左 Ctrl                                                                                         |
+| MAC LAYER 1 の D/F               | タップ 8/9 、ホールド左 Shift/GUI                                                                                   |
+| LINUX LAYER 1 の N/M/カンマ位置 | GUI+X / Page Down / Page Up                                                                                          |
+| MAC LAYER 1 の N/M/カンマ位置   | N / M / カンマ                                                                                                       |
+| LAYER 3 の I 位置                | Linux は F12 、 Mac は F8 （ PDF の違いをそのまま保存）                                                            |
+| Linux Layer 0 左下の透明キー    | 下位レイヤーがないので=KC_NO=（入力なし）                                                                          |
+| LAYER 3 の Space/Backspace 位置  | PDF の透明キーから Linux/Mac 選択キーへ変更                                                                        |
+| MUTE と音量                      | 実機の VIA 読み取り結果に合わせて Keyboard Mute / Volume を使用。 Consumer キー用の=EXTRAKEY=は無効              |
+| LAYER 2 の JIS Hiragana          | 実機で=KC_LNG4=と確認。 International 2 ではなく Language 4 を使用                                                 |
+| MAC LAYER 3 の Q 位置            | 実機の通常 F11 から、利用者の選択で PDF の Ctrl/F11 へ変更                                                        |
+| OLED                             | キー位置の表示行を OS 名とプロファイル内のレイヤー番号へ変更。ボール・ CPI ・スクロール・自動マウス表示は維持 |
+| LED                              | Step 6 で容量を確保するため、利用者の選択により単色点灯のみを維持                                                |
+
+LEDはPlainとオン／オフを維持する。アニメーションを選ぶ既存キーは配列に残るが、
+対応するエフェクトは無効。Step 5までのアニメーションはStep 6では利用できない。
+PDFのDebug Toggleキーは保存するが、Consoleは無効なのでデバッグ出力はない。
+
+PDFからは現行ファームウェアのタップ判定時間、TTのタップ回数、CPI、スクロール設定、
+自動マウス設定は分からない。上記の標準値と実機の現在の動作との違いは、書き込み前後に確認する。
+
+
+* Windows JISの記号とIME
+
+Windowsモードだけ、QMK Key OverridesでUSの論理キーをJISキーコードへ変換する。
+Shiftなし・ありの両方を扱い、Mod-Tapのタップも補正する。
+OS切替時には補正中のキーを解除する。
+
+当初は無変換・変換を割り当て、Microsoft IME側で機能を設定する方針だった。
+貸与PCで追加ソフトやIMEのキー再設定を必要としない操作を優先し、
+標準IMEのImeOff / ImeOnを直接送る構成へ変更した。
+
+| 位置 | 実装 |
+|------+------|
+| LinuxでTTの位置 | =LT(WIN_NUM, KC_LNG2)= |
+| 右Alt位置 | =RALT_T(KC_LNG1)= |
+
+Windowsの左キーはタップでIMEオフ、ホールドで数字レイヤー。
+TTの5回タップ固定はWindowsに追加しない。Linux/MacのTTは維持する。
+
+参考：[[https://docs.qmk.fm/features/key_overrides][QMK Key Overrides]]、
+[[https://learn.microsoft.com/ja-jp/windows-hardware/design/component-guidelines/keyboard-japan-ime][MicrosoftのImeOn / ImeOff仕様]]。
+
+* LEDと容量
+
+初期移行ではSnake・Knight・Static Gradient・Alternatingを省き、PDFにあるエフェクトを維持した。
+Windowsの記号補正追加時に30,202 / 28,672 bytesとなり、1,530 bytes超過した。
+利用者の選択により、Breathing・Rainbow Mood・Rainbow Swirl・Christmas・RGB Test・Twinkleも無効化。
+現在はPlainとオン／オフを維持している。
+
+* ビルドと実機確認の記録
+
+| 項目 | 結果 |
+|------+------|
+| Linux上のdirenvビルド | 成功 |
+| 生成HEX/ELFの配列表テスト | 11件成功。既存配列、Windows配列・IMEキー、20件の記号補正を検証 |
+| 復旧ファイルのテスト | 4件成功。実機での復旧コマンド実行は未検証 |
+| 最終Flash容量 | 27,714 / 28,672 bytes、残り958 bytes |
+| 静的RAM使用量 | data 570 + bss 1,118 = 1,688 / 2,560 bytes。スタック等に残り872 bytes |
+| Step 4のLinux/Mac入力 | 左右反転修正後の基本入力、従来マウス操作、OS切替を利用者が確認 |
+| Step 5のLinuxマウス操作 | M左クリック、カンマ右クリック、ピリオドスクロール、保持・解放を利用者が確認 |
+| Apple Silicon Mac用devShell | Linuxホストからの評価は成功。Macでのビルド・書き込み結果は未記録 |
+| Windows実機のJIS・IME動作 | 未検証 |
+
+配列表テストは生成物のキーコードを確認するもの。
+タップ／ホールドのタイミング、実際の文字出力、OS切替時の解放は実機で確認する。
+
+* 保存済みHEX
+
+| ファイル（リポジトリルートからの相対パス） | 状態 |
+|-------------------------------------------+------|
+| =keyball44/doc/recovery/keyball44-kaorubb-step4.hex= | Linux/Macで基本入力と従来マウス操作を実機確認済み |
+| =keyball44/doc/recovery/keyball44-kaorubb-step5.hex= | Linuxで新しいマウス配置を実機確認済み |
+| =keyball44/doc/recovery/keyball44-kaorubb-step6.hex= | ビルド検証済み。Windows実機未検証 |
+
+Step 5の配列ソースのコミットは=1e87e2a=。
+SHA256：=ae7cd08903ae1957189da5a32a207bb2f09cbb0d03d4e5d373e0aeb6dbe4c78f=。
+
+Step 6の配列ソースのコミットは=c539069=。
+SHA256：=08a3cf15dfb9889b8fb3a6f33472c32509cf15cd49f503d2f798b4a11ea2a51c=。
+
+* 別PCでの確認に残す情報
+
+- 使用したGitコミット、PCのCPUとOSバージョン。
+- ビルド・配列表テスト・容量検査の結果。
+- 左右それぞれの書き込み・読み戻し検証の結果。
+- 左右の入力・ポインタ方向・OS別入力・マウス保持と解放の結果。
+
+Intel Macでは固定NixpkgsのQMK付属ARMコンパイラが非対応で、devShell評価に失敗した。
+現在のMac導入手順はApple Siliconを対象にしている。
+
+* 詳細な移行記録
+
+元のファームウェア、左右のFlash・EEPROMの読み取り、各ステップの詳細は
+[[../../../../../../keyball44/doc/qmk-migration.md][QMK移行記録]]を参照する。
