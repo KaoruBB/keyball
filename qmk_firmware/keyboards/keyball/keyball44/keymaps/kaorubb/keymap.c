@@ -300,12 +300,7 @@ void oledkit_render_info_user(void) {
         oled_write_char('0' + get_highest_layer(layer_state | default_layer_state) - base, false);
         oled_write_P(PSTR("          "), false);
     }
-    oled_set_cursor(0, 1);
-    oled_write_P(PSTR("Key R"), false);
-    oled_write_char('0' + keyball.last_pos.row, false);
-    oled_write_P(PSTR(" C"), false);
-    oled_write_char('0' + keyball.last_pos.col, false);
-    oled_set_cursor(0, 2);
     keyball_oled_render_ballinfo();
+    keyball_oled_render_layerinfo();
 }
 #endif
